@@ -3,5 +3,5 @@
 
 void Hello::sayhello(const char * name)
 {
-	printf_s("%s\n", name);
+        printf("Hello %s!\n", name);
 }
