@@ -2,11 +2,11 @@ SET(LIBRARY_OUTPUT_PATH ${HELLO_SOURCE_DIR}/lib)	# 设置库文件打输出目�
 SET(CURRENT_HEADERS ${HELLO_SOURCE_DIR}/include)	# 设置include文件目录
 
 IF (WIN32)
-source_group("Include files" FILES ${CURRENT_HEADERS}) 
+source_group("Include files" FILES ${CURRENT_HEADERS}/*.h) 
 ENDIF ()
 
 SET(SRC_LIST hello.cpp)
 
 INCLUDE_DIRECTORIES(${CURRENT_HEADERS})
 
-ADD_LIBRARY(util SHARED ${SRC_LIST} ${CURRENT_HEADERS})
+ADD_LIBRARY(util SHARED ${SRC_LIST})
