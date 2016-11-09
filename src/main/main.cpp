@@ -1,11 +1,8 @@
-#include "hello.h"
-#include <iostream>
-
-using namespace std;
+#include <hello.h>
 
 int main()
 {
-    cout<<"Mew~"<<endl;
-    hello("world");
+    Hello obj;
+    obj.sayhello("world");
     return 0;
 }
