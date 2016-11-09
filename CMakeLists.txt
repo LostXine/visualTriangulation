@@ -7,6 +7,8 @@ IF (WIN32)
 MESSAGE(STATUS "Now is windows")
 # 设置编译为Win32
 set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /machine:x86" )  
+set( CMAKE_CONFIGURATION_TYPES "Debug;Release")
+
 ELSEIF (APPLE)
 MESSAGE(STATUS "Now is Apple systens.")
 ELSEIF (UNIX)
