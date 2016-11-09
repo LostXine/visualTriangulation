@@ -4,7 +4,7 @@
 
 using namespace std;
 
-void hello(const char * name)
+void Hello::sayhello(const char * name)
 {
     cout<<"Hello "<<name<<"!"<<endl;
 }
