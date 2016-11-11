@@ -1,8 +1,9 @@
-#include <hello.h>
+#include <tri_manager/tri_manager.h>
 
 int main()
 {
-    Hello obj;
+    tri_manager obj;
     obj.sayhello("world");
+    obj.testOpenCV("path");
     return 0;
 }
