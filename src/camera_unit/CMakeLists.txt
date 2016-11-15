@@ -1,4 +1,4 @@
-SET(T_LIB_NAME tri_manager)#设置本库的名字
+SET(T_LIB_NAME camera_unit)#设置本库的名字
 
 SET(LIBRARY_OUTPUT_PATH ${BWMT_SOURCE_DIR}/lib)	# 设置库文件输出目录
 SET(CURRENT_HEADERS ${BWMT_SOURCE_DIR}/include/${T_LIB_NAME})	# 设置include文件目录
@@ -37,20 +37,17 @@ if(MSVC)
 endif()
 
 #使用以下4句替换find_package(OpenCV REQUIRED) 防止版本错误。
-find_package(PkgConfig)
-pkg_check_modules(OpenCV opencv>=2.4.1 REQUIRED)
-
+#find_package(PkgConfig)
+#pkg_check_modules(OpenCV opencv>=2.4.1 REQUIRED)
 #OpenCV头文件 相当于gcc -I
-INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+#INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 #OpenCV库目录 相当于gcc -L
-LINK_DIRECTORIES(${OpenCV_LIBRARIES}) 
-
+#LINK_DIRECTORIES(${OpenCV_LIBRARIES})  
 #MESSAGE(STATUS "OpenCV Cflags:" ${OpenCV_CFLAGS})
-
 #MESSAGE(STATUS "OpenCV Include Dir:" ${OpenCV_INCLUDE_DIRS})
-
 #MESSAGE(STATUS "OpenCV Lib Dir:" ${OpenCV_LIBRARY_DIRS})
 
-ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})	#一个猜测：这个函数会直接编译源码
+ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})#一个猜测：这个函数会直接编译源码
+TARGET_LINK_LIBRARIES(${T_LIB_NAME} glog)		#添加glog
 #OpenCV链接库 相当于gcc -l
 #TARGET_LINK_LIBRARIES(tri_manager ${OpenCV_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码

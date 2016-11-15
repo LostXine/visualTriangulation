@@ -9,6 +9,7 @@ echo "Start to build ProjTest."
 #0是sh之后的第一个参数
 DIR="$( cd "$( dirname "$0"  )" && pwd  )" #获取sh文件所在目录的脚本
 build_dir="$DIR/build"
+log_dir="$DIR/bin/main-log"
 #echo $build_dir
 
 #判断目录是否存在
@@ -32,5 +33,10 @@ cmake ..
 make
 
 cd ..
+
+if [ ! -d $log_dir ];then
+mkdir $log_dir
+fi
+
 
 echo "All done."
