@@ -1,4 +1,4 @@
-SET(LIBRARY_OUTPUT_PATH ${HELLO_SOURCE_DIR}/lib)	# 设置库文件打输出目录
+SET(LIBRARY_OUTPUT_PATH ${HELLO_SOURCE_DIR}/lib)	# 设置库文件输出目录
 SET(CURRENT_HEADERS ${HELLO_SOURCE_DIR}/include/tri_manager)	# 设置include文件目录
 
 IF (WIN32)
@@ -6,16 +6,10 @@ FILE(GLOB TRI_HEADERS "${CURRENT_HEADERS}/*.h")
 SOURCE_GROUP("Include files" FILES  ${TRI_HEADERS}) 
 ENDIF ()
 
+
 SET(SRC_LIST tri_manager.cpp)
 
-#使用以下4句替换find_package(OpenCV REQUIRED) 防止版本错误。
-find_package(PkgConfig)
-pkg_check_modules(OpenCV opencv>=2.4.13)
-set(OpenCV_LIBS ${OpenCV_LIBRARIES})
-LINK_DIRECTORIES(${OpenCV_LIBDIR}) 
-MESSAGE(STATUS "OpenCV Libs:" ${OpenCV_LIBS})
-MESSAGE(STATUS "OpenCV Libdir:" ${OpenCV_LIBDIR})
-
+INCLUDE_DIRECTORIES(${CURRENT_HEADERS})
 
 if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -40,22 +34,21 @@ if(MSVC)
   endif()
 endif()
 
-#OpenCV 依赖
+#使用以下4句替换find_package(OpenCV REQUIRED) 防止版本错误。
+find_package(PkgConfig)
+pkg_check_modules(OpenCV opencv>=2.4.1 REQUIRED)
 
-#SET(OPENCV_TRI_REQUIRED_DEPS opencv_core opencv_flann opencv_imgproc
-#    opencv_highgui opencv_ml opencv_video opencv_objdetect opencv_photo
-#    opencv_features2d opencv_calib3d opencv_legacy opencv_contrib)
+#OpenCV头文件 相当于gcc -I
+INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+#OpenCV库目录 相当于gcc -L
+LINK_DIRECTORIES(${OpenCV_LIBRARIES}) 
 
-#ocv_check_dependencies(${OPENCV_TRI_REQUIRED_DEPS})
+MESSAGE(STATUS "OpenCV Cflags:" ${OpenCV_CFLAGS})
 
-#if(OCV_DEPENDENCIES_FOUND)
-#  if(CMAKE_COMPILER_IS_GNUCXX AND NOT ENABLE_NOISY_WARNINGS)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-function")
-#  endif()
+MESSAGE(STATUS "OpenCV Include Dir:" ${OpenCV_INCLUDE_DIRS})
 
-#  ocv_include_modules(${OPENCV_TRI_REQUIRED_DEPS} opencv_nonfree)
-#endif()
+MESSAGE(STATUS "OpenCV Lib Dir:" ${OpenCV_LIBRARY_DIRS})
 
-INCLUDE_DIRECTORIES(${CURRENT_HEADERS})
-
-ADD_LIBRARY(tri_manager SHARED ${OpenCV_LIBS} ${SRC_LIST} ${TRI_HEADERS})
+ADD_LIBRARY(tri_manager SHARED ${SRC_LIST} ${TRI_HEADERS})	#一个猜测：这个函数会直接编译源码
+#OpenCV链接库 相当于gcc -l
+#TARGET_LINK_LIBRARIES(tri_manager ${OpenCV_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码
