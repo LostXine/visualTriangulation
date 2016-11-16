@@ -1,5 +1,5 @@
 SET(EXECUTABLE_OUTPUT_PATH ${BWMT_SOURCE_DIR}/bin)	# 设置输出执行文件的目录
-
+add_definitions("-std=c++11")
 SET(SRC_LIST main.cpp)
 
 INCLUDE_DIRECTORIES(${BWMT_SOURCE_DIR}/include)
@@ -8,4 +8,8 @@ LINK_DIRECTORIES(${BWMT_SOURCE_DIR}/lib)
 
 ADD_EXECUTABLE(main ${SRC_LIST})
 
-TARGET_LINK_LIBRARIES(main tri_manager camera_unit glog)
+find_package(PCL REQUIRED)
+INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
+LINK_DIRECTORIES(${PCL_LIBRARIES_DIRS})
+
+TARGET_LINK_LIBRARIES(main tri_manager camera_unit visualization glog ${PCL_LIBRARIES})

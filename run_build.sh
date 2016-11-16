@@ -28,9 +28,9 @@ fi
 
 cd $build_dir
 
-cmake ..
+cmake .. -Wno-dev 
 
-make
+make -j8
 
 cd ..
 

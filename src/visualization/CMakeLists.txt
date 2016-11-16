@@ -1,4 +1,6 @@
-SET(T_LIB_NAME camera_unit)#设置本库的名字
+SET(T_LIB_NAME visualization)#设置本库的名字
+
+add_definitions("-std=c++11")
 
 SET(LIBRARY_OUTPUT_PATH ${BWMT_SOURCE_DIR}/lib)	# 设置库文件输出目录
 SET(CURRENT_HEADERS ${BWMT_SOURCE_DIR}/include/${T_LIB_NAME})	# 设置include文件目录
@@ -7,7 +9,6 @@ IF (WIN32)
 FILE(GLOB HD_LIST "${CURRENT_HEADERS}/*.h")
 SOURCE_GROUP("Include files" FILES  ${HD_LIST}) 
 ENDIF ()
-
 
 SET(SRC_LIST ${T_LIB_NAME}.cpp)
 
@@ -42,12 +43,14 @@ pkg_check_modules(OpenCV opencv>=2.4.1 REQUIRED)
 #OpenCV头文件 相当于gcc -I
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 #OpenCV库目录 相当于gcc -L
-LINK_DIRECTORIES(${OpenCV_LIBRARIES_DIRS})  
-#MESSAGE(STATUS "OpenCV Cflags:" ${OpenCV_CFLAGS})
-#MESSAGE(STATUS "OpenCV Include Dir:" ${OpenCV_INCLUDE_DIRS})
-#MESSAGE(STATUS "OpenCV Lib Dir:" ${OpenCV_LIBRARY_DIRS})
+#LINK_DIRECTORIES(${OpenCV_LIBRARIES_DIRS})  
+#MESSAGE(STATUS ${OpenCV_LIBRARIES_DIRS})
 
+find_package(PCL REQUIRED)
+INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
+LINK_DIRECTORIES(${PCL_LIBRARIES_DIRS})
 ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})#一个猜测：这个函数会直接编译源码
-TARGET_LINK_LIBRARIES(${T_LIB_NAME} glog opencv_calib3d)#添加glog
 #OpenCV链接库 相当于gcc -l
-#TARGET_LINK_LIBRARIES(tri_manager ${OpenCV_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码
+TARGET_LINK_LIBRARIES(${T_LIB_NAME} glog ${PCL_LIBRARIES})	#添加各种库
+
+
