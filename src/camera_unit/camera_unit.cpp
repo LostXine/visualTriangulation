@@ -6,7 +6,8 @@
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
 #include <rapidjson/pointer.h>
-
+// OpenGL
+#include <GL/gl.h>
 using namespace rapidjson;
 
 double parseDouble(Document &d,const char * p,int i)
@@ -92,6 +93,18 @@ return !(img.cols>0 && img.rows>0);
 camera_tri::camera_tri(const char* path)
 {
 LOG(INFO)<<"Camera Triangulation Manager";
+
+sift = new SiftGPU;
+char* myargv[4] ={ "-fo", "-1", "-v", "1"};
+    sift->ParseParam(4, myargv);
+
+    //检查硬件是否支持SiftGPU
+    int support = sift->CreateContextGL();
+    if ( support != SiftGPU::SIFTGPU_FULL_SUPPORTED )
+    {
+        LOG(ERROR)<<"SiftGPU is not supported!";
+    }
+
 sprintf(root,"%s/",path);//定义数据目录
 LOG(INFO)<<"Root:"<<root;
 
@@ -124,6 +137,7 @@ for(size_t t = 0;t<seq.size();t++)
 {
 if(seq[t]!=NULL){delete seq[t];}
 }
+if(sift!=NULL){delete sift;}
 }
 
 
@@ -141,10 +155,25 @@ else
 //第一帧要初始化坐标
 tcu->initAbs();
 }
-tcu->updateIsUsed(begin,end);//检查是否在范围内
 seq.push_back(tcu);//输入队列
 //tcu->calculateKpt();//检测特征点
 tcu->loadImg();//读取图像
+if(tcu->updateIsUsed(begin,end))//检查是否在范围内
+{
+int width = tcu->img.cols;
+int height = tcu->img.rows;
+LOG(INFO)<<"W:"<<width<<" H:"<<height;
+//提取特征点
+if(sift->RunSIFT(width, height, tcu->img.data, GL_INTENSITY8, GL_UNSIGNED_BYTE))
+{
+int num = sift->GetFeatureNum();
+LOG(INFO)<<"Found SIFT num:"<<num;
+tcu->kpts.resize(num);tcu->desp.resize(128*num);
+sift->GetFeatureVector(&(tcu->kpts[0]),&(tcu->desp[0]));
+LOG(INFO)<<"Extract Feature Vector Done";
+}
+}
+
 return tcu;
 }
 

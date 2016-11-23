@@ -11,6 +11,10 @@
 #endif
 
 #include <opencv2/opencv.hpp>
+
+// SiftGPU模块
+#include <SiftGPU.h>
+#include <stddef.h>
 #include <vector>
 
 extern "C" class camera_unit_EXPORT camera_single
@@ -29,20 +33,20 @@ char img_path[256];
 //JSON指针
 char* chjs;
 public:
-
 int index;//图像的序号
 camera_single(const char* js,const char* path);
 //更新绝对位置
 void updateAbs(cv::Vec3f& last_T,cv::Matx33f& last_R);
 void initAbs();//第一帧初始化
 //获得坐标指针
+
 cv::Vec3f*   getabs_T(){return &abs_T;}
 cv::Matx33f* getabs_R(){return &abs_R;}
 //提取图像特征
 bool isUsed;
 bool updateIsUsed(int begin,int end){isUsed = (index<end&&index>=begin);return isUsed;}
-std::vector<cv::KeyPoint> kpt;//特征点
-cv::Mat dep;//特征向量
+std::vector<SiftGPU::SiftKeypoint> kpts;//特征点
+std::vector<float> desp;//特征向量
 cv::Mat img;//图像本体
 int loadImg();//打开图像
 
@@ -54,7 +58,7 @@ private:
 std::vector<camera_single*> seq;
 int begin,end;
 cv::Mat K;
-
+SiftGPU *sift;
 char root[256];
 public:
 camera_tri(const char* path);
