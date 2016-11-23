@@ -45,12 +45,20 @@ INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 #OpenCV库目录 相当于gcc -L
 LINK_DIRECTORIES(${OpenCV_LIBRARIES}) 
 
-#MESSAGE(STATUS "OpenCV Cflags:" ${OpenCV_CFLAGS})
+# OpenGL
+find_package(OpenGL REQUIRED)
 
-#MESSAGE(STATUS "OpenCV Include Dir:" ${OpenCV_INCLUDE_DIRS})
+# GLUT
+find_package(GLUT REQUIRED)
 
-#MESSAGE(STATUS "OpenCV Lib Dir:" ${OpenCV_LIBRARY_DIRS})
+# Glew
+find_package(GLEW REQUIRED)
+
+# SiftGPU：手动设置其头文件与库文件所在位置
+include_directories("~/Codelibs/SiftGPU/src/SiftGPU/" ${OpenGL_INCLUDE_DIR})
+set(SIFTGPU_LIBS "~/Codelibs/SiftGPU/bin/libsiftgpu.so")
 
 ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})	#一个猜测：这个函数会直接编译源码
 #OpenCV链接库 相当于gcc -l
-#TARGET_LINK_LIBRARIES(tri_manager ${OpenCV_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码
+TARGET_LINK_LIBRARIES(tri_manager ${SIFTGPU_LIBS} ${GLEW_LIBRARIES} ${GLUT_LIBRARIES} ${OPENGL_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码
+

@@ -41,6 +41,7 @@ find_package(PkgConfig)
 pkg_check_modules(OpenCV opencv>=2.4.1 REQUIRED)
 #OpenCV头文件 相当于gcc -I
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+
 #OpenCV库目录 相当于gcc -L
 LINK_DIRECTORIES(${OpenCV_LIBRARIES_DIRS})  
 #MESSAGE(STATUS "OpenCV Cflags:" ${OpenCV_CFLAGS})
@@ -48,6 +49,10 @@ LINK_DIRECTORIES(${OpenCV_LIBRARIES_DIRS})
 #MESSAGE(STATUS "OpenCV Lib Dir:" ${OpenCV_LIBRARY_DIRS})
 
 ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})#一个猜测：这个函数会直接编译源码
-TARGET_LINK_LIBRARIES(${T_LIB_NAME} glog opencv_calib3d)#添加glog
+TARGET_LINK_LIBRARIES(${T_LIB_NAME} 
+glog 
+opencv_calib3d 
+opencv_core 
+opencv_highgui)#添加glog
 #OpenCV链接库 相当于gcc -l
 #TARGET_LINK_LIBRARIES(tri_manager ${OpenCV_LIBRARIES})	#一个猜测：这个函数会调用编译好的代码

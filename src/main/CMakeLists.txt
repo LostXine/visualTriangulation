@@ -12,4 +12,4 @@ find_package(PCL REQUIRED)
 INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
 LINK_DIRECTORIES(${PCL_LIBRARIES_DIRS})
 
-TARGET_LINK_LIBRARIES(main tri_manager camera_unit visualization glog ${PCL_LIBRARIES})
+TARGET_LINK_LIBRARIES(main tri_manager camera_unit visualization glog ${PCL_LIBRARIES} opencv_core)

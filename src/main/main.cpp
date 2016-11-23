@@ -6,6 +6,7 @@
 #include <vector>
 #include <fstream>
 #include <thread>
+//#include <opencv2/gpu/gpu.hpp>
 
 #define JS_BUF 1024
 //绘制线程
@@ -67,8 +68,8 @@ while(viz==0){usleep(1000);}//等待指针赋值
 LOG(INFO)<<"---VISUALIZATION ONLINE---";
 
 //加载JSON环节
-LOG(INFO)<<"---LOAD JSON---";
-std::vector<camera_unit*>seq;
+LOG(INFO)<<"---LOAD INFO---";
+camera_tri ctri(argv[1]);//特征提取模块
 char dt_dir[256] = {0};
 sprintf(dt_dir,"%s/data.json",argv[1]);
 std::fstream dt;
@@ -85,7 +86,7 @@ char tmp[JS_BUF]={0};
 while(dt.getline(tmp,JS_BUF))
 {
 //调试加载慢一点
-usleep(1e4);
+//usleep(1e4);
 
 
 //检测注释！
@@ -98,40 +99,21 @@ tmp[p]=0;break;//截断字符串，进入解析环节
 }
 }
 if(p<2){continue;}
-camera_unit* tcu = new camera_unit(tmp);
-if(tcu->index<0){delete tcu;continue;}//检查加载是否正确
+camera_single* tcu = ctri.addCamera(tmp);
+if(tcu==0){continue;}//检查加载是否正确
 else
 {
-int idx = seq.size();
-if(idx > 0)
-{
-tcu->updateAbs(*(seq[idx-1]->getabs_T()),*(seq[idx-1]->getabs_R()));//更新坐标
-}
-else
-{
-//第一帧要初始化坐标
-tcu->initAbs();
-}
-seq.push_back(tcu);//输入队列
 //绘制
-//float R[9] = {1,0,0,0,1,0,0,0,1};
-//float t[3] = {(float)*(tcu->getabs_T()),(float)*(tcu->getabs_T()+1),(float)*(tcu->getabs_T()+2)};
-//printf("R:\n%f %f %f\n%f %f %f\n%f %f %f\n",R[0],R[1],R[2],R[3],R[4],R[5],R[6],R[7],R[8]);
-//printf("t:\n%f %f %f\n",t[0],t[1],t[2]);
-viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),200.0f,100.0f,0.0f,0.1f);
-
+if(tcu->isUsed){viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),250.0f,10.0f,0.0f,0.1f);}
+else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0f,0.0f,0.1f);}
 }
 }
-
 }
 dt.close();
+cv::destroyAllWindows();
 
 
 //结束了！
-for(size_t t = 0;t<seq.size();t++)
-{
-if(seq[t]!=NULL){delete seq[t];}
-}
 t.join();
 LOG(INFO)<<"---TRIANGULATION MANAGER---";
 return 0;
