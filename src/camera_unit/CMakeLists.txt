@@ -1,5 +1,5 @@
 SET(T_LIB_NAME camera_unit)#设置本库的名字
-
+add_definitions("-std=c++11")
 SET(LIBRARY_OUTPUT_PATH ${BWMT_SOURCE_DIR}/lib)	# 设置库文件输出目录
 SET(CURRENT_HEADERS ${BWMT_SOURCE_DIR}/include/${T_LIB_NAME})	# 设置include文件目录
 

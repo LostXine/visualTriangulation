@@ -6,6 +6,8 @@
 #include <vector>
 #include <fstream>
 #include <thread>
+#include <pcl/io/pcd_io.h>
+
 //#include <opencv2/gpu/gpu.hpp>
 
 #define JS_BUF 1024
@@ -19,11 +21,51 @@ visualization viz;
 while(!(viz.viewer->wasStopped())) 
 {
 viz.checkoutCamera();
+viz.checkoutPointCloud();
 viz.viewer->spinOnce(20);
 } 
 _viz = NULL;
 LOG(INFO)<<"--PCL Thread done--";
 }
+
+//MAT->PCL
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr MatToPointXYZRGB(cv::Mat OpencVPointCloud,cv::Mat color)
+         {
+             /*
+             *  Function: Get from a Mat to pcl pointcloud datatype
+             *  In: cv::Matqq
+             */
+
+             pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::PointXYZRGB>);
+
+             for(int i=0;i<OpencVPointCloud.cols;i++)
+             {
+                //std::cout<<i<<endl;
+
+                pcl::PointXYZRGB point;
+		float ratio = OpencVPointCloud.at<float>(3,i);
+                point.x = OpencVPointCloud.at<float>(0,i)/ratio;
+                point.y = OpencVPointCloud.at<float>(1,i)/ratio;
+                point.z = OpencVPointCloud.at<float>(2,i)/ratio;
+//LOG(INFO)<<"x:"<<point.x<<" y:"<<point.y<<" z:"<<point.z<<" d:"<<ratio;
+
+                // when color needs to be added:
+                uint32_t rgb = (static_cast<uint32_t>(color.at<char>(0,i)) << 16 | static_cast<uint32_t>(color.at<char>(1,i)) << 8 | static_cast<uint32_t>(color.at<char>(2,i)));
+                point.rgb = *reinterpret_cast<float*>(&rgb);
+/*		if(point.x*point.x+point.y*point.y + point.z*point.z<1e4)
+{*/
+                point_cloud_ptr -> points.push_back(point);
+/*}
+*/
+             }
+point_cloud_ptr->is_dense=false;
+             point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+//printf("Point num:%d\n",point_cloud_ptr->width);
+             point_cloud_ptr->height = 1;
+
+             return point_cloud_ptr;
+
+         }
 
 
 int main(int argc, char** argv)
@@ -85,10 +127,6 @@ else
 char tmp[JS_BUF]={0};
 while(dt.getline(tmp,JS_BUF))
 {
-//调试加载慢一点
-//usleep(1e4);
-
-
 //检测注释！
 int p;
 for(p = 0;p<JS_BUF;p++)
@@ -110,11 +148,36 @@ else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0
 }
 }
 dt.close();
-cv::destroyAllWindows();
+//三角化
+LOG(INFO)<<"---TRIANGULATION---";
+cv::Mat res,color;
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd,pcl;
+/*
+ctri.matchCamera(20,40,res,color);
+LOG(INFO)<<res.rows<<" x "<<res.cols;
+
+pcd = MatToPointXYZRGB(res,color);
+LOG(INFO)<<"show PCD";
+viz->visualizationShowPointCloud(pcd,"maio");
+LOG(INFO)<<"show DONE";
+*/
+ctri.matchCamera(35,45,res,color);
+pcl = MatToPointXYZRGB(res,color);
+LOG(INFO)<<"show PCD";
+viz->visualizationShowPointCloud(pcl,"mai");
+LOG(INFO)<<"show DONE";
+/*
+std::string filename("test.pcd");  
+pcl::PCDWriter writer;
+writer.write(filename,*pcd);  
+LOG(INFO)<<"Save done.";
+*/
+
 
 
 //结束了！
 t.join();
+cv::destroyAllWindows();
 LOG(INFO)<<"---TRIANGULATION MANAGER---";
 return 0;
 }

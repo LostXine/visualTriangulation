@@ -64,6 +64,12 @@ void visualization::visualizerShowCamera(const float R[9], const float t[3], flo
 void visualization::visualizerShowCamera(const cv::Matx33f& R, const cv::Vec3f& t, float r, float g, float b, double s, const std::string& name) {
 	visualizerShowCamera(Matrix<float,3,3,RowMajor>(R.val),Vector3f(t.val),r,g,b,s,name);
 }
+void visualization::visualizationShowPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd,const std::string& name)
+{
+cdx.lock();
+pointcloudptr.push_back(std::make_pair(name,pcd));
+cdx.unlock();
+}
 /////////////////////////////////////////////////////////////////////////////////
 //构造与X够
 visualization::visualization()
@@ -105,4 +111,17 @@ viewer->addLine(A,B,0.0,0.7,0.2,linesToShow[i].first);
 cam_meshes.clear();
 linesToShow.clear();
 ctx.unlock();
+}
+
+//消费点云
+void visualization::checkoutPointCloud()
+{
+cdx.lock();
+for(int i = 0;i<pointcloudptr.size();i++)
+{
+printf("MMMMMMMMMMMMMMMM\n");
+viewer->addPointCloud(pointcloudptr[i].second,pointcloudptr[i].first);
+}
+pointcloudptr.clear();
+cdx.unlock();
 }

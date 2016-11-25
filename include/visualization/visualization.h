@@ -24,16 +24,19 @@ extern "C" class visualization_EXPORT visualization
 {
 private:
 int ilines = 0;
-std::mutex ctx;
+std::mutex ctx,cdx;
 std::deque<std::pair<std::string,pcl::PolygonMesh> > cam_meshes;
 std::deque<std::pair<std::string,std::vector<Matrix<float,6,1> > > > linesToShow;
+std::deque<std::pair<std::string,pcl::PointCloud<pcl::PointXYZRGB>::Ptr>> pointcloudptr;
 public:
 pcl::visualization::PCLVisualizer* viewer;
+void visualizationShowPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd,const std::string& name = "");
 void visualizerShowCamera(const float R[9], const float t[3], float r, float g, float b);
 void visualizerShowCamera(const float R[9], const float t[3], float r, float g, float b, double s);
 void visualizerShowCamera(const cv::Matx33f& R, const cv::Vec3f& t, float r, float g, float b, double s, const std::string& name = "");
 void visualizerShowCamera(const Matrix3f& R, const Vector3f& _t, float r, float g, float b, double s = 0.1 /*downscale factor*/, const std::string& name = "");
 void checkoutCamera();
+void checkoutPointCloud();
 
 visualization();
 ~visualization();
