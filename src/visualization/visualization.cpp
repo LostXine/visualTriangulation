@@ -119,7 +119,6 @@ void visualization::checkoutPointCloud()
 cdx.lock();
 for(int i = 0;i<pointcloudptr.size();i++)
 {
-printf("MMMMMMMMMMMMMMMM\n");
 viewer->addPointCloud(pointcloudptr[i].second,pointcloudptr[i].first);
 }
 pointcloudptr.clear();

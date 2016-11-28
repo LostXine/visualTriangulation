@@ -1,5 +1,6 @@
 #include <cstdio>
-#include <glog/logging.h>  
+#include <glog/logging.h> 
+#include <math.h> 
 #include "camera_unit.h"
 
 #include <rapidjson/rapidjson.h>
@@ -14,6 +15,17 @@
 #endif
 using namespace rapidjson;
 
+
+double getDistance(cv::Vec3f a,cv::Vec3f b)
+{
+cv::Vec3f p = a-b;
+double res = 0;
+for(int i = 0;i<3;i++)
+{
+res +=p[i]*p[i];
+}
+return sqrt(res);
+}
 //计算距离
 double getDistance(cv::Point2f a,cv::Point2f b)
 {
@@ -23,7 +35,14 @@ dy = b.y-a.y;
 return dx*dx+dy*dy;
 }
 
-
+int parseInt(Document& d,const char* p,int i)
+{
+int r = -1;
+char q[32];
+sprintf(q,"/%s/%d",p,i);
+if(Value* _r = Pointer(q).Get(d)){r= _r->GetInt();};
+return r;
+}
 double parseDouble(Document &d,const char * p,int i)
 {
 double r = -1;
@@ -38,6 +57,7 @@ camera_single::camera_single(const char* js,const char* path)
 {
 isUsed = false;
 index = -1;
+for(int i = 0;i<4;i++){b_box[i]=-1;}
 memset(img_path,0,sizeof(img_path));
 Document d;
 d.Parse(js);	
@@ -61,6 +81,11 @@ delta_T[i] = (float)parseDouble(d,"T vector",i);
 //abs_R[i] = 0;
 //abs_T[i] = 0;
 }
+for(int i = 0;i<4;i++)
+{
+b_box[i] = parseInt(d,"box",i);
+}
+
 //清除前两个坐标
 delta_R[0] = 0;
 delta_R[1] = delta_R[2];
@@ -107,8 +132,13 @@ for(int i = 0;i<kpts.size();i++)
 {
 cv::circle(draw,kpts[i].pt,2,cv::Scalar(255,0,255));
 }
+if(b_box[0]>0)
+{
+cv::rectangle(draw,cv::Point(b_box[0],b_box[1]),cv::Point(b_box[2],b_box[3]),cv::Scalar(255,255,0),2);
+}
 cv::imshow("img",draw);
 cv::waitKey(0);
+cv::destroyWindow("img");
 }
 
 cv::Mat camera_single::getCameraMat(cv::Mat K)
@@ -221,7 +251,19 @@ sift->GetFeatureVector(&(tcu->kpts[0]),&(tcu->desp[0]));
 LOG(INFO)<<"Extract Feature Vector Done";
 }
 #else
-detector->detect(tcu->img, tcu->kpts);
+if(*(tcu->getBBox())>0)
+{
+int *bx = tcu->getBBox();
+cv::Mat mk = cv::Mat::zeros(tcu->img.rows,tcu->img.cols,CV_8UC1);
+cv::rectangle(mk,cv::Point(*bx,*(bx+1)),cv::Point(*(bx+2),*(bx+3)),cv::Scalar(255,255,255),CV_FILLED);
+/*
+cv::imshow("mask",mk);
+cv::waitKey(0);
+cv::destroyWindow("mask");
+*/
+detector->detect(tcu->img,tcu->kpts,mk);
+}
+else{detector->detect(tcu->img, tcu->kpts);}
 descriptor->compute(tcu->img, tcu->kpts,tcu->desp);
 LOG(INFO)<<"Found FAST num:"<<tcu->kpts.size();
 //tcu->drawKeypoints();
@@ -239,24 +281,29 @@ gomatch = true;
 return tcu;
 }
 
-int camera_tri::matchCamera(int l,int r,cv::Mat& result,cv::Mat& color)
+double camera_tri::matchCamera(int l,int r,cv::Mat& result,cv::Mat& color)
 {
 if(l>=seq.size() || l<0 || r<0 || r>seq.size())
 {
 LOG(ERROR)<<"matchCamera() Wrong index L:"<<l <<" R:"<<r;
 return -1;
 }
-if(seq[l]->kpts.size()==0||seq[l]->kpts.size()==0)
+if(seq[l]->kpts.size()==0||seq[r]->kpts.size()==0)
 {
 LOG(ERROR)<<"matchCamera() empty keypoints";
 return -2;
 }
+LOG(INFO)<<"Left:"<<l <<" have "<<seq[l]->kpts.size()<<" pts.";
+LOG(INFO)<<"Right:"<<r <<" have "<<seq[r]->kpts.size()<<" pts.";
 std::vector<cv::DMatch>dm;
 mh.push_back(lrmatch(l,r));
 matcher->match(seq[l]->desp,seq[r]->desp, dm);
 LOG(INFO)<<"Index "<<l<<" and "<<r<<" found "<<dm.size()<<" pairs";
-//匹配完毕，开始对齐
+
 std::vector<cv::Point2f>lp,rp;
+if(dm.size()>10)
+{
+//匹配完毕，开始对齐
 for(int i = 0;i<dm.size();i++)
 {
 //(mh.end()-1)->match.push_back(dm[i]);
@@ -264,17 +311,25 @@ lp.push_back(seq[l]->kpts[dm[i].queryIdx].pt);
 rp.push_back(seq[r]->kpts[dm[i].trainIdx].pt);
 }
 cv::Mat mask;
-cv::findFundamentalMat(lp,rp,CV_FM_RANSAC,3,0.99,mask);
+cv::findFundamentalMat(lp,rp,CV_FM_RANSAC,1,0.99,mask);
 //滤除错配点
 //std::cout<<mask;
 for(int p = 0;p<dm.size();p++)
 {
 if(mask.at<char>(p,0) == 1)
 {
-if(getDistance(seq[l]->kpts[dm[p].queryIdx].pt,seq[r]->kpts[dm[p].trainIdx].pt)<1e5)
+if(getDistance(seq[l]->kpts[dm[p].queryIdx].pt,seq[r]->kpts[dm[p].trainIdx].pt)<1e4)
 {
 (mh.end()-1)->match.push_back(dm[p]);
 }
+}
+}
+}
+else
+{
+for(int p = 0;p<dm.size();p++)
+{
+(mh.end()-1)->match.push_back(dm[p]);
 }
 }
 LOG(INFO)<<"Index "<<l<<" and "<<r<<" found ("<<(mh.end()-1)->match.size()<<"/"<<dm.size()<<") pairs";
@@ -290,17 +345,30 @@ lp.push_back(seq[l]->kpts[(mh.end()-1)->match[i].queryIdx].pt);
 rp.push_back(seq[r]->kpts[(mh.end()-1)->match[i].trainIdx].pt);
 }
 
-LOG(INFO)<<lp.size()<<" "<<rp.size();
-LOG(INFO)<<seq[l]->getP()<<" "<<seq[r]->getP();
+//LOG(INFO)<<lp.size()<<" "<<rp.size();
+//LOG(INFO)<<seq[l]->getP()<<" "<<seq[r]->getP();
 cv::triangulatePoints(seq[l]->getP(),seq[r]->getP(),lp,rp,result);
 color = cv::Mat(3,lp.size(),CV_8UC1);//获取颜色
 for(int i = 0;i<color.cols;i++)
 {
-color.at<char>(0,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[0];
+color.at<char>(0,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[2];
 color.at<char>(1,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[1];
-color.at<char>(2,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[2];
+color.at<char>(2,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[0];
 }
 
+
+cv::Vec3f avg(0,0,0);
+for(int i = 0;i<result.cols;i++)
+{
+
+for(int j = 0;j<3;j++)
+{
+avg[j] += result.at<float>(j,i)/result.at<float>(3,i);
+}
+}
+avg=avg/result.cols;
+
+return getDistance(*(seq[l]->getabs_T()),avg);
 }
 
 
@@ -324,12 +392,29 @@ cv::line(cm,seq[l]->kpts[mh[i].match[b].queryIdx].pt,seq[r]->kpts[mh[i].match[b]
 //cv::drawMatches(seq[l]->img_color,seq[l]->kpts,seq[r]->img_color,seq[r]->kpts,mh[i].match,cm);
 cv::imshow("matches",cm);
 cv::waitKey(0);
+cv::destroyWindow("matches");
 return 0;
 }
 }
 return -1;
 }
 
+void camera_tri::matchAll(int step,std::vector<cv::Mat>& res,std::vector<cv::Mat>&color)
+{
+int s = step;
+if(step<1){s = 1;}
+LOG(INFO)<<"Matching inv:"<<s;
+for(int i = begin;i+s<end;i+=s)
+{
+cv::Mat _res,_color;
+
+matchCamera(i,s+i,_res,_color);
+
+res.push_back(_res);
+color.push_back(_color);
+}
+
+}
 
 
 

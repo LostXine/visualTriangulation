@@ -2,3 +2,5 @@ ADD_SUBDIRECTORY(camera_unit)
 ADD_SUBDIRECTORY(visualization)
 ADD_SUBDIRECTORY(tri_manager)
 ADD_SUBDIRECTORY(main)
+
+ADD_SUBDIRECTORY(detection)

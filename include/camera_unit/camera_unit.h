@@ -21,6 +21,8 @@
 extern "C" class camera_unit_EXPORT camera_single
 {
 private:
+//位置信息
+int b_box[4];
 //本帧相对于上一帧的变化
 float delta_R[3];
 float delta_T[3];
@@ -59,6 +61,7 @@ cv::Mat img;//图像本体
 cv::Mat img_color;//彩色图像本体
 int loadImg();//打开图像
 int drawKeypoints();//绘制特征点图像
+int* getBBox(){return b_box;}
 };
 
 extern "C" class camera_unit_EXPORT camera_tri
@@ -82,7 +85,7 @@ cv::Mat K;
 #ifdef USE_GPU_SIFT
 SiftGPU *sift;
 #else
-cv::Ptr<cv::FeatureDetector> detector = cv::FeatureDetector::create("ORB");
+cv::Ptr<cv::FeatureDetector> detector = cv::FeatureDetector::create("FAST");
 cv::Ptr<cv::DescriptorExtractor> descriptor = cv::DescriptorExtractor::create("ORB");
 cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
 #endif
@@ -91,8 +94,11 @@ public:
 camera_tri(const char* path);
 ~camera_tri();
 camera_single* addCamera(const char* js);
-int matchCamera(int l,int r,cv::Mat& result,cv::Mat& color);
+double matchCamera(int l,int r,cv::Mat& result,cv::Mat& color);
 int drawMatch(int l,int r);
+void matchAll(int step,std::vector<cv::Mat>& res,std::vector<cv::Mat> &color);
+int getBegin(){return begin;}
+int getEnd(){return end;}
 };
 #endif //_camera_unit_
 

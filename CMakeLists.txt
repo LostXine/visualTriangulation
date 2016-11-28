@@ -12,7 +12,6 @@ ELSEIF (UNIX)
 MESSAGE(STATUS "Now is UNIX-like OS's. Including Apple OS X and CygWin")
 ENDIF ()
 
-
 ADD_SUBDIRECTORY(src)			#设置子目录
 
 #BINARY_DIR是终端执行的目录

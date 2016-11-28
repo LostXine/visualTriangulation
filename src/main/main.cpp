@@ -113,7 +113,7 @@ LOG(INFO)<<"---VISUALIZATION ONLINE---";
 LOG(INFO)<<"---LOAD INFO---";
 camera_tri ctri(argv[1]);//特征提取模块
 char dt_dir[256] = {0};
-sprintf(dt_dir,"%s/data.json",argv[1]);
+sprintf(dt_dir,"%s/detection.json",argv[1]);
 std::fstream dt;
 dt.open(dt_dir,std::ios::in);
 if(!dt.is_open())
@@ -150,8 +150,8 @@ else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0
 dt.close();
 //三角化
 LOG(INFO)<<"---TRIANGULATION---";
-cv::Mat res,color;
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd,pcl;
+std::vector<cv::Mat> res,color;
+
 /*
 ctri.matchCamera(20,40,res,color);
 LOG(INFO)<<res.rows<<" x "<<res.cols;
@@ -161,19 +161,40 @@ LOG(INFO)<<"show PCD";
 viz->visualizationShowPointCloud(pcd,"maio");
 LOG(INFO)<<"show DONE";
 */
-ctri.matchCamera(35,45,res,color);
+/*
+ctri.matchAll(10,res,color);
+for(int i = 0;i<res.size();i++)
+{
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
+pcl = MatToPointXYZRGB(res[i],color[i]);
+char d[16];
+sprintf(d,"cc_%d",i);
+viz->visualizationShowPointCloud(pcl,d);
+}
+*/
+int begin,end;
+begin = ctri.getBegin();
+end = ctri.getEnd();
+int step = 2;
+for(int i = begin;i+step<end-1;i++)
+{
+cv::Mat res,color;
+LOG(INFO)<<ctri.matchCamera(i,i+step,res,color);
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
 pcl = MatToPointXYZRGB(res,color);
-LOG(INFO)<<"show PCD";
-viz->visualizationShowPointCloud(pcl,"mai");
-LOG(INFO)<<"show DONE";
+char d[16];
+sprintf(d,"cc_%d",i);
+viz->visualizationShowPointCloud(pcl,d);
+
+}
+LOG(INFO)<<"Done";
 /*
 std::string filename("test.pcd");  
 pcl::PCDWriter writer;
 writer.write(filename,*pcd);  
 LOG(INFO)<<"Save done.";
 */
-
-
 
 //结束了！
 t.join();
