@@ -9,7 +9,7 @@
 #include <pcl/io/pcd_io.h>
 
 //#include <opencv2/gpu/gpu.hpp>
-
+//#define HISTGRAM
 #define JS_BUF 1024
 //绘制线程
 void update_PCL(visualization** _viz)
@@ -22,12 +22,27 @@ while(!(viz.viewer->wasStopped()))
 {
 viz.checkoutCamera();
 viz.checkoutPointCloud();
-viz.viewer->spinOnce(20);
+viz.viewer->spinOnce(100);
 } 
 _viz = NULL;
 LOG(INFO)<<"--PCL Thread done--";
 }
 
+//绘制图
+void update_PLOT(plot** _viz)
+{
+LOG(INFO)<<"--PLOT Thread online--";
+plot viz;
+*_viz = &viz;//传递指针出去
+//LOG(INFO)<<"PCL_VIS:"<<(long int)(*_viz);
+while(!(viz.viewer->wasStopped())) 
+{
+viz.checkoutBar();
+viz.viewer->spinOnce(100);
+} 
+_viz = NULL;
+LOG(INFO)<<"--PLOT Thread done--";
+}
 //MAT->PCL
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr MatToPointXYZRGB(cv::Mat OpencVPointCloud,cv::Mat color)
          {
@@ -103,9 +118,17 @@ return 1;
 
 //启动PCL窗口环节
 LOG(INFO)<<"---START VISUALIZATION---";
+
+#ifdef HISTGRAM
+plot* plt = 0;
+std::thread t(update_PLOT, &plt);
+while(plt==0){usleep(1000);}//等待指针赋值
+#else
 visualization* viz =0;
 std::thread t(update_PCL, &viz);
 while(viz==0){usleep(1000);}//等待指针赋值
+#endif
+
 //LOG(INFO)<<"MAIN_VIS:"<<(long int)viz;
 LOG(INFO)<<"---VISUALIZATION ONLINE---";
 
@@ -141,9 +164,11 @@ camera_single* tcu = ctri.addCamera(tmp);
 if(tcu==0){continue;}//检查加载是否正确
 else
 {
+#ifndef HISTGRAM
 //绘制
 if(tcu->isUsed){viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),250.0f,10.0f,0.0f,0.1f);}
 else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0f,0.0f,0.1f);}
+#endif
 }
 }
 }
@@ -175,18 +200,28 @@ viz->visualizationShowPointCloud(pcl,d);
 int begin,end;
 begin = ctri.getBegin();
 end = ctri.getEnd();
-int step = 2;
+int step = 1;
+int sx = 0;
 for(int i = begin;i+step<end-1;i++)
+//for(int i = begin;i<begin+1;i++)
 {
 cv::Mat res,color;
-LOG(INFO)<<ctri.matchCamera(i,i+step,res,color);
-
+double distance = ctri.matchCamera(i,i+step,res,color);
+LOG(INFO)<<distance;
+//LOG(INFO)<<res;
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
 pcl = MatToPointXYZRGB(res,color);
 char d[16];
 sprintf(d,"cc_%d",i);
+#ifdef HISTGRAM
+if(distance>0){
+plt->plotShowBar(sx,0,distance);
+}
+#else
 viz->visualizationShowPointCloud(pcl,d);
+#endif
 
+sx++;
 }
 LOG(INFO)<<"Done";
 /*

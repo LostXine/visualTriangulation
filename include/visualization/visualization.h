@@ -20,6 +20,23 @@
 #include <mutex>
 using namespace Eigen;
 
+extern "C" class visualization_EXPORT plot
+{
+private:
+std::mutex ctx;
+float barl = 3;
+float bara = 2;
+std::deque<std::pair<cv::Point,double>> bar;
+public:
+pcl::visualization::PCLVisualizer* viewer;
+
+plot();
+~plot();
+void plotShowBar(int x,int y,double value);
+void checkoutBar();
+};
+
+
 extern "C" class visualization_EXPORT visualization
 {
 private:
@@ -41,5 +58,7 @@ void checkoutPointCloud();
 visualization();
 ~visualization();
 };
+
+
 
 #endif //_visualization_

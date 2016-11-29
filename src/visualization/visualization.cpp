@@ -124,3 +124,57 @@ viewer->addPointCloud(pointcloudptr[i].second,pointcloudptr[i].first);
 pointcloudptr.clear();
 cdx.unlock();
 }
+/////////////////////////////////////////////////////////////////////////////////
+//plot类
+plot::plot()
+{
+viewer = new pcl::visualization::PCLVisualizer("Plot");
+viewer->setCameraPosition(0,0,-3.0,0,-1,0);  
+viewer->addCoordinateSystem(1); 
+pcl::PointXYZRGB p;
+p.x = 1.2f;
+viewer->addText3D("X",p,0.2,1.0,0.0,0.0);
+p.y = 1.2f;p.x=0;
+viewer->addText3D("Y",p,0.2,0.0,1.0,0.0);
+p.z=1.2f;p.y = 0;
+viewer->addText3D("Z",p,0.2,0.0,0.0,1.0);
+}
+
+plot::~plot()
+{
+if(viewer!=NULL)
+{
+delete viewer;
+}
+}
+
+void plot::plotShowBar(int x,int y,double value)
+{
+ctx.lock();
+bar.push_back(std::make_pair(cv::Point(x,y),value));
+ctx.unlock();
+}
+void plot::checkoutBar()
+{
+ctx.lock();
+//添加Bar
+for(int i = 0;i < bar.size();i++)
+{
+//printf("%d,%d",bar[i].first.x,bar[i].first.y);
+int x = bar[i].first.x;
+int y = bar[i].first.y;
+char p[16];
+sprintf(p,"bar%d%d",x,y);
+viewer->addCube(x*barl,x*barl+bara,y*barl,y*barl+bara,0,bar[i].second,0,0.7,0.5,p);
+pcl::PointXYZRGB pos;
+pos.x = x*barl+bara*0.5;
+pos.y = y*barl+bara*0.5;
+pos.z = bar[i].second+1;
+sprintf(p,"%03.3f",bar[i].second);
+viewer->addText3D(p,pos,1.0,1.0,1.0,1.0);
+//viewer->addText3D
+}
+bar.clear();
+
+ctx.unlock();
+}

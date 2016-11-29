@@ -9,12 +9,25 @@
 #include <rapidjson/pointer.h>
 #include <thread>
 
+#include<ctime>
+#include<cstdlib>
+
 #ifdef USE_GPU_SIFT
 // OpenGL
 #include <GL/gl.h>
 #endif
 using namespace rapidjson;
 
+
+cv::Vec3f cmod(cv::Vec3f p,double b)
+{
+float q[3];
+for(int i = 0;i<3;i++)
+{
+q[i] = p[i]/b;
+}
+return cv::Vec3f(q);
+}
 
 double getDistance(cv::Vec3f a,cv::Vec3f b)
 {
@@ -34,6 +47,84 @@ dx = a.x-b.x;
 dy = b.y-a.y;
 return dx*dx+dy*dy;
 }
+
+//判断在球内
+bool isIn(cv::Vec3f a,cv::Vec3b b,double radiu)
+{
+return getDistance(a,b)<radiu;
+}
+//生成模型
+cv::Vec3f genModel(std::vector<cv::Vec3f> l)
+{
+cv::Vec3f ret(0,0,0);
+for(int i = 0;i<l.size();i++)
+{
+ret = ret + l[i];
+}
+
+return cmod(ret,l.size());
+}
+
+
+int refilterPoints(cv::Mat result,std::vector<int>& mask,cv::Vec3f& ref,double radiu,double rate = 0.7)
+{
+double thre = -rate;
+std::vector<int> index;
+int inv = 0;
+std::vector<cv::Vec3f> plist;
+for(int i = 0;i<result.cols;i++)
+{
+plist.push_back(cv::Vec3f(result.at<float>(0,i)/result.at<float>(3,i),result.at<float>(1,i)/result.at<float>(3,i),result.at<float>(2,i)/result.at<float>(3,i)));
+}
+
+while(thre<rate && inv<5000)
+{
+int m_size = 5;
+//候选模型
+std::vector<cv::Vec3f> m_list;
+for(int i = 0;i<m_size;i++)
+{
+m_list.push_back(plist[rand()%plist.size()]);
+}
+cv::Vec3f m_model = genModel(m_list);
+
+std::vector<int> m_index;
+//判断模型
+for(int i = 0;i<plist.size();i++)
+{
+if(isIn(m_model,plist[i],radiu))
+{
+m_index.push_back(i);
+}
+}
+//结算模型
+double m_thre = ((double)m_index.size())/plist.size();
+
+if(m_thre>thre)
+{
+LOG(INFO)<<"INV:"<<inv<<" From "<<thre<<" to "<<m_thre;
+thre = m_thre;//移交最大值
+index = m_index;
+}
+inv++;
+}
+//移交模板
+mask = index;
+std::vector<cv::Vec3f> flist;
+for(int i = 0;i<index.size();i++)
+{
+flist.push_back(plist[index[i]]);
+}
+ref= genModel(flist);
+//计算距离
+if(thre>rate){return 0;}
+else
+{
+return 1;
+}
+}
+
+
 
 int parseInt(Document& d,const char* p,int i)
 {
@@ -333,8 +424,7 @@ for(int p = 0;p<dm.size();p++)
 }
 }
 LOG(INFO)<<"Index "<<l<<" and "<<r<<" found ("<<(mh.end()-1)->match.size()<<"/"<<dm.size()<<") pairs";
-//显示匹配
-drawMatch(l,r);
+
 //重新对齐特征点
 lp.clear();rp.clear();
 
@@ -347,8 +437,52 @@ rp.push_back(seq[r]->kpts[(mh.end()-1)->match[i].trainIdx].pt);
 
 //LOG(INFO)<<lp.size()<<" "<<rp.size();
 //LOG(INFO)<<seq[l]->getP()<<" "<<seq[r]->getP();
-cv::triangulatePoints(seq[l]->getP(),seq[r]->getP(),lp,rp,result);
-color = cv::Mat(3,lp.size(),CV_8UC1);//获取颜色
+cv::Mat triRet;
+cv::triangulatePoints(seq[l]->getP(),seq[r]->getP(),lp,rp,triRet);
+//根据距离再滤一遍
+std::vector<int> mkpt;
+cv::Vec3f posvec;//最终距离
+double distance = -1;
+if(!refilterPoints(triRet,mkpt,posvec,7,0.6))
+{
+LOG(INFO)<<"After RANSAC: ("<<mkpt.size()<<"/"<<triRet.cols<<")";
+distance = getDistance(*(seq[l]->getabs_T()),posvec);
+cv::Mat rettmp (4,mkpt.size(),CV_32FC1);
+lp.clear();
+rp.clear();
+(mh.end()-1)->match.clear();//清除原有匹配
+for(int i = 0;i<mkpt.size();i++)
+{
+int idx = mkpt[i];
+//写入显示
+for(int j = 0;j<4;j++)
+{
+rettmp.at<float>(j,i) = triRet.at<float>(j,idx);
+}
+result = rettmp.clone();
+
+cv::DMatch* dmtp = &(dm[idx]);
+(mh.end()-1)->match.push_back(*dmtp);//推入新的匹配
+lp.push_back(seq[l]->kpts[dmtp->queryIdx].pt);
+rp.push_back(seq[r]->kpts[dmtp->trainIdx].pt);
+}
+
+}
+else
+{
+//没有成功
+LOG(INFO)<<"Fail to RANSAC.";
+std::vector<cv::Vec3f>m_list;
+for(int i = 0;i<triRet.cols;i++)
+{
+m_list.push_back(cv::Vec3f(triRet.at<float>(0,i)/triRet.at<float>(3,i),triRet.at<float>(1,i)/triRet.at<float>(3,i),triRet.at<float>(2,i)/triRet.at<float>(3,i)));
+}
+posvec = genModel(m_list);
+distance = getDistance(*(seq[l]->getabs_T()),posvec);
+result = triRet.clone();
+}
+
+color = cv::Mat(3,triRet.cols,CV_8UC1);//获取颜色
 for(int i = 0;i<color.cols;i++)
 {
 color.at<char>(0,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[2];
@@ -356,19 +490,8 @@ color.at<char>(1,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[1];
 color.at<char>(2,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[0];
 }
 
-
-cv::Vec3f avg(0,0,0);
-for(int i = 0;i<result.cols;i++)
-{
-
-for(int j = 0;j<3;j++)
-{
-avg[j] += result.at<float>(j,i)/result.at<float>(3,i);
-}
-}
-avg=avg/result.cols;
-
-return getDistance(*(seq[l]->getabs_T()),avg);
+drawMatch(l,r);
+return distance;
 }
 
 
@@ -380,7 +503,7 @@ if(mh[i].left==l && mh[i].right==r)
 {
 cv::Mat cm;
 std::vector<cv::Mat>chs;
-chs.push_back(seq[l]->img);
+chs.push_back(seq[r]->img);
 chs.push_back(seq[l]->img);
 chs.push_back(seq[r]->img);
 cv::merge(chs,cm);
@@ -392,7 +515,7 @@ cv::line(cm,seq[l]->kpts[mh[i].match[b].queryIdx].pt,seq[r]->kpts[mh[i].match[b]
 //cv::drawMatches(seq[l]->img_color,seq[l]->kpts,seq[r]->img_color,seq[r]->kpts,mh[i].match,cm);
 cv::imshow("matches",cm);
 cv::waitKey(0);
-cv::destroyWindow("matches");
+//cv::destroyWindow("matches");
 return 0;
 }
 }
