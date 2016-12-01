@@ -36,6 +36,35 @@ using namespace caffe;  // NOLINT(build/namespaces)
 using namespace cv;
 using namespace rapidjson;
 
+cv::Point p1,p2;
+cv::Mat img_global;
+bool check_line_state;
+
+void on_mouse4(int event, int x,int y,int flags,void* param)
+{
+	int thickness=1;
+
+	if(event==CV_EVENT_LBUTTONDOWN)
+	{
+		//当前鼠标位置（x，y）
+		p1=cv::Point(x,y);
+		check_line_state=true;
+	}
+	else if(check_line_state&&event==CV_EVENT_MOUSEMOVE)//鼠标状态
+	{
+		cv::Mat imgshow= img_global.clone(); //这一步很重要，不断更新显示图像，不然画出的图像如图2所示
+		p2=cv::Point(x,y);
+		cv::rectangle(imgshow,p1,p2,CV_RGB(0,255,150),thickness,CV_AA,0);
+		cv::imshow("image",imgshow);
+		
+	}
+	else if(check_line_state&&event==CV_EVENT_LBUTTONUP)
+	{
+		check_line_state=false;
+	}
+}
+
+
 class Detector {
  public:
   Detector(const string& model_file,
@@ -252,7 +281,9 @@ DEFINE_double(confidence_threshold, 0.5,
 int Detector::detect(const char *file, int bbox[4]){
     cv::Mat img = cv::imread(file, -1);
     CHECK(!img.empty()) << "Unable to decode image " << file;
-    std::vector<vector<float> > detections = Detect(img);
+
+    img_global = img.clone();
+std::vector<vector<float> > detections = Detect(img);
     int sum=0;
     for (int i = 0; i < detections.size(); ++i) {
           const vector<float>& d = detections[i];
@@ -275,7 +306,7 @@ int Detector::detect(const char *file, int bbox[4]){
             sum = bbox[0]+bbox[1]+bbox[2]+bbox[3];
           }
         }
-if(sum){rectangle(img,cv::Point(bbox[0],bbox[1]),cv::Point(bbox[2],bbox[3]),cv::Scalar(255,0,0));cv::imshow("img",img);cv::waitKey(50);}
+//if(sum){rectangle(img,cv::Point(bbox[0],bbox[1]),cv::Point(bbox[2],bbox[3]),cv::Scalar(255,0,0));cv::imshow("image",img);}
   return (sum > 0)? 0 : 1;
 }
 
@@ -288,7 +319,6 @@ int main(int argc, char** argv) {
 #ifndef GFLAGS_GFLAGS_H_
   namespace gflags = google;
 #endif
-
 
   const string& model_file = argv[1];
   const string& weights_file = argv[2];
@@ -314,6 +344,7 @@ return 2;
 }
 else
 {
+bool isDetection = true;
 char tmp[256]={0};
 while(dt.getline(tmp,256))
 {
@@ -345,24 +376,59 @@ char f_path[256];
 sprintf(f_path,"%s/%s",argv[3],path_cache);
 const char* pf = f_path;
   int bndbox[4]={0};
-  int flag = detector.detect(pf,bndbox);
-  
+cv::namedWindow("image",CV_WINDOW_AUTOSIZE);
+cv::setMouseCallback("image",on_mouse4);
+
+int flag = detector.detect(pf,bndbox);
   Value* _index = Pointer("/index").Get(d);
-if(!flag)
+ std::cout<<"Index:"<<_index->GetInt()<<" flag:"<<flag;
+if(flag)
 {
+cv::Mat img_s = img_global.clone();
+rectangle(img_s,p1,p2,cv::Scalar(0,128,255));
+cv::imshow("image",img_s);
+if(isDetection)
+{
+char p = cv::waitKey();
+std::cout<<" key:"<<(int)p;
+if(p == 27){isDetection = false;for(int i = 0;i<4;i++){bndbox[i]=-1;}}
+else
+{
+bndbox[0] = p1.x;
+bndbox[1] = p1.y;
+bndbox[2] = p2.x;
+bndbox[3] = p2.y;
+}
+}
+else
+{
+cv::waitKey(10);
+}
+
+}
+else
+{
+//检测成功
+cv::Mat imgshow = img_global.clone();
+rectangle(imgshow,cv::Point(bndbox[0],bndbox[1]),cv::Point(bndbox[2],bndbox[3]),cv::Scalar(255,0,0));
+cv::imshow("image",imgshow);
+cv::waitKey(10);
+}
+ std::cout<<std::endl;
+
 for(int i = 0;i<4;i++)
 {
 char idx[7];
 sprintf(idx,"/box/%d",i);
 Pointer(idx).Set(d,bndbox[i]);
 }
+p1 = cv::Point(bndbox[0],bndbox[1]);
+p2 = cv::Point(bndbox[2],bndbox[3]);
+
 }
-else
-{
-  std::cout<<"Index:"<<_index->GetInt()<<" flag:"<<flag<<std::endl;
+
 }
-}
-}
+
 rapidjson::StringBuffer bf;
 rapidjson::Writer<StringBuffer> wt(bf);
 d.Accept(wt);

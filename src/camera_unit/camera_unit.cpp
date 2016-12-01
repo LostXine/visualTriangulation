@@ -165,6 +165,14 @@ if (Value* _path = Pointer("/image path").Get(d))
 sprintf(img_path,"%s%s",path,_path->GetString());
 //memcpy(img_path,_path->GetString(),_path->GetStringLength());
 }
+if (Value* _gt = Pointer("/rtk distance").Get(d))
+{
+groundtruth = _gt->GetDouble();
+}
+else
+{
+groundtruth = -1;
+}
 for(int i = 0;i<3;i++)
 {
 delta_R[i] = (float)parseDouble(d,"R vector",i);
@@ -306,7 +314,7 @@ if(sift!=NULL){delete sift;}
 camera_single* camera_tri::addCamera(const char* js)
 {
 camera_single* tcu = new camera_single(js,root);
-if(tcu->index<=0){return 0;}//加载失败
+if(tcu->index<0){return 0;}//加载失败
 int idx = seq.size();
 if(idx > 0)
 {
@@ -424,7 +432,7 @@ for(int p = 0;p<dm.size();p++)
 }
 }
 LOG(INFO)<<"Index "<<l<<" and "<<r<<" found ("<<(mh.end()-1)->match.size()<<"/"<<dm.size()<<") pairs";
-
+if((mh.end()-1)->match.size()<1){LOG(WARNING)<<"No matched pairs.";return -3;}
 //重新对齐特征点
 lp.clear();rp.clear();
 
@@ -490,7 +498,7 @@ color.at<char>(1,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[1];
 color.at<char>(2,i) = seq[l]->img_color.at<cv::Vec3b>(lp[i])[0];
 }
 
-drawMatch(l,r);
+//drawMatch(l,r);
 return distance;
 }
 

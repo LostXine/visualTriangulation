@@ -18,21 +18,26 @@
 #include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
 #include <mutex>
+
+#define MAX_ERROR 50
 using namespace Eigen;
+
 
 extern "C" class visualization_EXPORT plot
 {
 private:
 std::mutex ctx;
-float barl = 3;
-float bara = 2;
-std::deque<std::pair<cv::Point,double>> bar;
+float barl = 2;
+float bara = 1.5;
+std::deque<std::pair<cv::Point,cv::Point2f>> bar;
+std::deque<cv::Vec3f> bar_color;
 public:
 pcl::visualization::PCLVisualizer* viewer;
 
 plot();
 ~plot();
-void plotShowBar(int x,int y,double value);
+void plotShowBar(int x,int y,double value,double value2,double r,double g,double b);
+void plotShowBar(int x,int y,double value,double value2);
 void checkoutBar();
 };
 

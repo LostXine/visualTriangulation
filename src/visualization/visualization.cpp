@@ -129,8 +129,8 @@ cdx.unlock();
 plot::plot()
 {
 viewer = new pcl::visualization::PCLVisualizer("Plot");
-viewer->setCameraPosition(0,0,-3.0,0,-1,0);  
-viewer->addCoordinateSystem(1); 
+//viewer->setCameraPosition(0,0,-3.0,0,-1,0);  
+//viewer->addCoordinateSystem(1); 
 pcl::PointXYZRGB p;
 p.x = 1.2f;
 viewer->addText3D("X",p,0.2,1.0,0.0,0.0);
@@ -147,12 +147,17 @@ if(viewer!=NULL)
 delete viewer;
 }
 }
-
-void plot::plotShowBar(int x,int y,double value)
+void plot::plotShowBar(int x,int y,double value,double value2,double r,double g,double b)
 {
 ctx.lock();
-bar.push_back(std::make_pair(cv::Point(x,y),value));
+bar.push_back(std::make_pair(cv::Point(x,y),cv::Point2f(value,value2)));
+bar_color.push_back(cv::Vec3f(r,g,b));
 ctx.unlock();
+}
+
+void plot::plotShowBar(int x,int y,double value,double value2)
+{
+plotShowBar(x,y,value,value2,0.8,0.8,0.0);
 }
 void plot::checkoutBar()
 {
@@ -163,18 +168,54 @@ for(int i = 0;i < bar.size();i++)
 //printf("%d,%d",bar[i].first.x,bar[i].first.y);
 int x = bar[i].first.x;
 int y = bar[i].first.y;
-char p[16];
-sprintf(p,"bar%d%d",x,y);
-viewer->addCube(x*barl,x*barl+bara,y*barl,y*barl+bara,0,bar[i].second,0,0.7,0.5,p);
+double r,g,b;
+r = bar_color[i][0];
+g = bar_color[i][1];
+b = bar_color[i][2];
+//std::cout<<"--Add Bar-x:"<<x<<" y:"<<y<<" r:"<<r<<" g:"<<g<<" b:"<<b<<std::endl;
+char p[32]; 
+sprintf(p,"bar%d-%d",x,y);
+
+viewer->addCube(x*barl,x*barl+bara,y*barl,y*barl+bara,std::min(bar[i].second.x,bar[i].second.y),std::max(bar[i].second.x,bar[i].second.y),r,g,b,p);
+
 pcl::PointXYZRGB pos;
 pos.x = x*barl+bara*0.5;
 pos.y = y*barl+bara*0.5;
-pos.z = bar[i].second+1;
-sprintf(p,"%03.3f",bar[i].second);
-viewer->addText3D(p,pos,1.0,1.0,1.0,1.0);
+
+pos.z = (bar[i].second.x>bar[i].second.y)?bar[i].second.y-1.0:bar[i].second.y+1.0;
+sprintf(p,"%03.2f",bar[i].second.y);
+char id[16];
+sprintf(id,"%d-%d-v",x,y);
+if(x == 0)
+{
+viewer->addText3D(p,pos,0.4,1.0,1.0,1.0,id);
+}
+else
+{
+
+viewer->addText3D(p,pos,0.4,0.7,0.7,0.7,id);
+}
+sprintf(id,"%d-%d-y",x,y);
 //viewer->addText3D
+if(x==0)
+{
+sprintf(p,"t = %d",y);
+pos.x = -4;
+pos.y = y*barl+bara*0.5;
+pos.z = 0;
+viewer->addText3D(p,pos,0.8,1.0,0.5,0.5,id);
+}
+sprintf(id,"%d-%d-x",x,y);
+if(y==0)
+{
+sprintf(p,"Skip = %d",x);
+pos.y = -4;
+pos.x = x*barl+bara*0.5;
+pos.z = 0;
+viewer->addText3D(p,pos,0.8,0.5,1.0,0.5,id);
+}
 }
 bar.clear();
-
+bar_color.clear();
 ctx.unlock();
 }

@@ -2,7 +2,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${BWMT_SOURCE_DIR}/bin)	# 设置输出执行文件的
 SET(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 
 add_definitions("-std=c++11")
-SET(SRC_LIST XYWD.cpp)
+SET(SRC_LIST detection.cpp)
 
 find_package(OpenCV REQUIRED)
 

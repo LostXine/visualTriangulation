@@ -9,8 +9,21 @@
 #include <pcl/io/pcd_io.h>
 
 //#include <opencv2/gpu/gpu.hpp>
-//#define HISTGRAM
+//#define DRAW_PCL
+#define HISTGRAM
 #define JS_BUF 1024
+
+double dabs(double i){return i<0?-i:i;}
+//计算伪彩色
+cv::Vec3f calColor(double in)
+{
+float gray = std::min(dabs(in)/(double)MAX_ERROR,1.0);
+float r,g,b;
+r = gray;
+g = (gray<0.5)? gray*2:(1.0-gray)*2;
+b = 1.0-gray;
+return cv::Vec3f (r,g,b);
+}
 //绘制线程
 void update_PCL(visualization** _viz)
 {
@@ -38,7 +51,7 @@ plot viz;
 while(!(viz.viewer->wasStopped())) 
 {
 viz.checkoutBar();
-viz.viewer->spinOnce(100);
+viz.viewer->spinOnce(1000);
 } 
 _viz = NULL;
 LOG(INFO)<<"--PLOT Thread done--";
@@ -83,6 +96,8 @@ point_cloud_ptr->is_dense=false;
          }
 
 
+
+
 int main(int argc, char** argv)
 {
 /*测试代码*/
@@ -116,6 +131,7 @@ LOG(INFO)<<"Program return 1";
 return 1;
 }
 
+#ifdef  DRAW_PCL
 //启动PCL窗口环节
 LOG(INFO)<<"---START VISUALIZATION---";
 
@@ -128,7 +144,7 @@ visualization* viz =0;
 std::thread t(update_PCL, &viz);
 while(viz==0){usleep(1000);}//等待指针赋值
 #endif
-
+#endif
 //LOG(INFO)<<"MAIN_VIS:"<<(long int)viz;
 LOG(INFO)<<"---VISUALIZATION ONLINE---";
 
@@ -164,10 +180,12 @@ camera_single* tcu = ctri.addCamera(tmp);
 if(tcu==0){continue;}//检查加载是否正确
 else
 {
+#ifdef  DRAW_PCL
 #ifndef HISTGRAM
 //绘制
 if(tcu->isUsed){viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),250.0f,10.0f,0.0f,0.1f);}
 else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0f,0.0f,0.1f);}
+#endif
 #endif
 }
 }
@@ -177,53 +195,118 @@ dt.close();
 LOG(INFO)<<"---TRIANGULATION---";
 std::vector<cv::Mat> res,color;
 
-/*
-ctri.matchCamera(20,40,res,color);
-LOG(INFO)<<res.rows<<" x "<<res.cols;
-
-pcd = MatToPointXYZRGB(res,color);
-LOG(INFO)<<"show PCD";
-viz->visualizationShowPointCloud(pcd,"maio");
-LOG(INFO)<<"show DONE";
-*/
-/*
-ctri.matchAll(10,res,color);
-for(int i = 0;i<res.size();i++)
-{
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
-pcl = MatToPointXYZRGB(res[i],color[i]);
-char d[16];
-sprintf(d,"cc_%d",i);
-viz->visualizationShowPointCloud(pcl,d);
-}
-*/
 int begin,end;
 begin = ctri.getBegin();
 end = ctri.getEnd();
-int step = 1;
-int sx = 0;
-for(int i = begin;i+step<end-1;i++)
+
+std::vector<double>gndth,err,err_min;
+std::vector<int>err_c,err_idx;
+for(int i = 0;i<(end-begin);i++)
+{
+double p = ctri.seq[i+begin]->groundtruth;
+p  =sqrt(p*p+25);//标牌高5m
+#ifdef DRAW_PCL
+#ifdef HISTGRAM
+plt->plotShowBar(0,i,0,p);
+#endif
+#endif
+gndth.push_back(p);
+}
+
+std::vector<std::vector<double>>ft;
+int step = std::min(end-begin,30);
+LOG(INFO)<<"STEP:"<<step;
+int sx = 1,sy = 0;
+ft.resize(end-begin);
+err.resize(step);
+err_c.resize(step);
+err_min.resize(step);
+err_idx.resize(step);
+for(int i = 0;i<err.size();i++){err[i]=0;err_c[i]=0;err_min[i] = 1e5;err_idx[i] = -1;}//清零误差和
+for(int i = begin;i<end;i++)
+//注意！这里是index坐标！
 //for(int i = begin;i<begin+1;i++)
 {
+for(int j = 1;j<=end-i && j<=step;j++)
+{
+LOG(INFO)<<"---index:"<<i<<"---step:"<<j<<"---";
 cv::Mat res,color;
-double distance = ctri.matchCamera(i,i+step,res,color);
+double distance = ctri.matchCamera(i-1,i+j-1,res,color);
+ft[i-begin].push_back(distance);
 LOG(INFO)<<distance;
 //LOG(INFO)<<res;
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
+//LOG(INFO)<<"M0";
+if(res.cols<1){continue;}
+//LOG(INFO)<<"M1";
 pcl = MatToPointXYZRGB(res,color);
-char d[16];
-sprintf(d,"cc_%d",i);
-#ifdef HISTGRAM
-if(distance>0){
-plt->plotShowBar(sx,0,distance);
+char d[32];
+sprintf(d,"cc_%d_%d",i,j);
+//LOG(INFO)<<"M2";
+
+if(distance>0)
+{
+//LOG(INFO)<<"M3";
+//LOG(INFO)<<"M4";
+double err_this =distance-gndth[i-begin];
+err[j-1]+= dabs(err_this);
+if(dabs(err_this)<err_min[j-1])
+{
+//LOG(WARNING)<<"Abs:"<<abs(err_this)<<" no Abs:"<<err_this;
+LOG(WARNING)<<"Image:"<<i<<" Step:"<<j<<" min_err from "<<err_min[j-1]<<" to "<<dabs(err_this);
+err_min[j-1] = dabs(err_this);err_idx[j-1] = i;
 }
-#else
+err_c[j-1]++;
+#ifdef  DRAW_PCL
+#ifdef HISTGRAM
+cv::Vec3f cc = calColor(err_this);
+LOG(INFO)<<"Draw-sx:"<<sx<<" sy:"<<sy<<" v2:"<<err_this<<cc;
+//plt->plotShowBar(sx,sy,gndth[i-begin],distance,cc[0],cc[1],cc[2]);
+plt->plotShowBar(sx,sy,0.0,err_this,cc[0],cc[1],cc[2]);
+#endif
+#endif
+
+}
+#ifdef  DRAW_PCL
+#ifndef HISTGRAM
 viz->visualizationShowPointCloud(pcl,d);
+#endif
 #endif
 
 sx++;
 }
+sx = 1;
+sy++;
+}
+
 LOG(INFO)<<"Done";
+//计算平均值
+for(int i = 0;i<err.size();i++)
+{
+err[i] = err[i]/err_c[i];
+}
+LOG(INFO)<<"ABS ERR";
+FILE *outfile;
+sprintf(dt_dir,"%s/output_distance.txt",argv[1]);
+outfile = fopen(dt_dir,"w");
+fprintf(outfile,"Format\nIndex|mean_error|min_error|min_error_index|min_error_location\n");
+for(int i = 0;i<err.size();i++){
+printf("%03d | %0.3f | %0.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
+fprintf(outfile,"%03d | %0.3f | %.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
+};
+fclose(outfile);
+LOG(INFO)<<"TREE";
+for(int i = 0;i<ft.size();i++)
+{
+printf("%03d|%.1f|",ctri.getBegin()+i,gndth[i]);
+for(int j =0;j<ft[i].size();j++)
+{
+printf("%.1f ",ft[i][j]);
+}
+printf("\n");
+}
+
+LOG(INFO)<<"ALL DONE";
 /*
 std::string filename("test.pcd");  
 pcl::PCDWriter writer;
@@ -232,7 +315,9 @@ LOG(INFO)<<"Save done.";
 */
 
 //结束了！
+#ifdef DRAW_PCL
 t.join();
+#endif
 cv::destroyAllWindows();
 LOG(INFO)<<"---TRIANGULATION MANAGER---";
 return 0;

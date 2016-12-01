@@ -38,6 +38,7 @@ char img_path[256];
 char* chjs;
 public:
 int index;//图像的序号
+double groundtruth;//真实的距离
 camera_single(const char* js,const char* path);
 //更新绝对位置
 void updateAbs(cv::Vec3f& last_T,cv::Matx33f& last_R);
@@ -49,7 +50,7 @@ cv::Vec3f*   getabs_T(){return &abs_T;}
 cv::Matx33f* getabs_R(){return &abs_R;}
 //提取图像特征
 bool isUsed;
-bool updateIsUsed(int begin,int end){isUsed = (index<end&&index>=begin);return isUsed;}
+bool updateIsUsed(int begin,int end){isUsed = (index<=end&&index>=begin);return isUsed;}
 #ifdef USE_GPU_SIFT
 std::vector<SiftGPU::SiftKeypoint> kpts;//特征点
 std::vector<float> desp;//特征向量
@@ -78,7 +79,7 @@ right = r;
 }
 };
 private:
-std::vector<camera_single*> seq;
+
 std::vector<lrmatch> mh;
 int begin,end;
 cv::Mat K;
@@ -91,6 +92,7 @@ cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteFor
 #endif
 char root[256];
 public:
+std::vector<camera_single*> seq;
 camera_tri(const char* path);
 ~camera_tri();
 camera_single* addCamera(const char* js);

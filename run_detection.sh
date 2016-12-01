@@ -6,5 +6,5 @@ build_dir="$DIR/bin"
 
 #echo $build_dir
 
-${build_dir}/detection ~/Codelibs/ssd/caffe/models/deploy.prototxt ~/Codelibs/ssd/caffe/models/VGG_SJTUBMW-B_SSD_1280x720_iter_60000.caffemodel /home/xine/Tri2/s1/
+${build_dir}/detection ~/Codelibs/ssd/caffe/models/deploy.prototxt ~/Codelibs/ssd/caffe/models/VGG_SJTUBMW-B_SSD_1280x720_iter_60000.caffemodel /home/xine/Tri2/s3/
 
