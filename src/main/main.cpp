@@ -9,7 +9,7 @@
 #include <pcl/io/pcd_io.h>
 
 //#include <opencv2/gpu/gpu.hpp>
-//#define DRAW_PCL
+#define DRAW_PCL
 #define HISTGRAM
 #define JS_BUF 1024
 
@@ -261,8 +261,8 @@ err_c[j-1]++;
 #ifdef HISTGRAM
 cv::Vec3f cc = calColor(err_this);
 LOG(INFO)<<"Draw-sx:"<<sx<<" sy:"<<sy<<" v2:"<<err_this<<cc;
-//plt->plotShowBar(sx,sy,gndth[i-begin],distance,cc[0],cc[1],cc[2]);
-plt->plotShowBar(sx,sy,0.0,err_this,cc[0],cc[1],cc[2]);
+plt->plotShowBar(sx,sy,0,distance,cc[0],cc[1],cc[2]);
+//plt->plotShowBar(sx,sy,0.0,err_this,cc[0],cc[1],cc[2]);
 #endif
 #endif
 

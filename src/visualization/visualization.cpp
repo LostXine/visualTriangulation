@@ -177,7 +177,7 @@ char p[32];
 sprintf(p,"bar%d-%d",x,y);
 
 viewer->addCube(x*barl,x*barl+bara,y*barl,y*barl+bara,std::min(bar[i].second.x,bar[i].second.y),std::max(bar[i].second.x,bar[i].second.y),r,g,b,p);
-
+//viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION,pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME,p);
 pcl::PointXYZRGB pos;
 pos.x = x*barl+bara*0.5;
 pos.y = y*barl+bara*0.5;
