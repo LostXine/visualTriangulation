@@ -1,0 +1,26 @@
+SET(T_LIB_NAME visualization)#设置本库的名字
+
+add_definitions("-std=c++11")
+
+SET(LIBRARY_OUTPUT_PATH ${BWMT_SOURCE_DIR}/lib)	# 设置库文件输出目录
+SET(CURRENT_HEADERS ${BWMT_SOURCE_DIR}/include/${T_LIB_NAME})	# 设置include文件目录
+
+IF (WIN32)
+FILE(GLOB HD_LIST "${CURRENT_HEADERS}/*.h")
+SOURCE_GROUP("Include files" FILES  ${HD_LIST}) 
+ENDIF ()
+
+SET(SRC_LIST ${T_LIB_NAME}.cpp)
+
+INCLUDE_DIRECTORIES(${CURRENT_HEADERS})
+
+find_package(OpenCV REQUIRED)
+
+find_package(PCL REQUIRED)
+INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
+LINK_DIRECTORIES(${PCL_LIBRARIES_DIRS})
+ADD_LIBRARY(${T_LIB_NAME} SHARED ${SRC_LIST} ${HD_LIST})#一个猜测：这个函数会直接编译源码
+#OpenCV链接库 相当于gcc -l
+TARGET_LINK_LIBRARIES(${T_LIB_NAME} glog ${PCL_LIBRARIES})	#添加各种库
+
+
