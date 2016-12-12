@@ -12,6 +12,9 @@
 
 #include <opencv2/opencv.hpp>
 
+//#define DISTORTION_CORR
+
+
 #ifdef USE_GPU_SIFT
 // SiftGPU模块
 #include <SiftGPU.h>
@@ -59,6 +62,7 @@ std::vector<cv::KeyPoint> kpts;
 cv::Mat desp;
 #endif
 cv::Mat img;//图像本体
+cv::Mat img_before_distortion;
 cv::Mat img_color;//彩色图像本体
 int loadImg();//打开图像
 int drawKeypoints();//绘制特征点图像
@@ -83,6 +87,7 @@ private:
 std::vector<lrmatch> mh;
 int begin,end;
 cv::Mat K;
+cv::Mat distortion;
 #ifdef USE_GPU_SIFT
 SiftGPU *sift;
 #else

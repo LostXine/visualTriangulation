@@ -9,7 +9,7 @@
 #include <pcl/io/pcd_io.h>
 
 //#include <opencv2/gpu/gpu.hpp>
-#define DRAW_PCL
+//#define DRAW_PCL
 #define HISTGRAM
 #define JS_BUF 1024
 
@@ -17,25 +17,25 @@ double dabs(double i){return i<0?-i:i;}
 //计算伪彩色
 cv::Vec3f calColor(double in)
 {
-float gray = std::min(dabs(in)/(double)MAX_ERROR,1.0);
-float r,g,b;
-r = gray;
-g = (gray<0.5)? gray*2:(1.0-gray)*2;
-b = 1.0-gray;
-return cv::Vec3f (r,g,b);
+    float gray = std::min(dabs(in)/(double)MAX_ERROR,1.0);
+    float r,g,b;
+    r = gray;
+    g = (gray<0.5)? gray*2:(1.0-gray)*2;
+    b = 1.0-gray;
+    return cv::Vec3f (r,g,b);
 }
 //绘制线程
 void update_PCL(visualization** _viz)
 {
-LOG(INFO)<<"--PCL Thread online--";
-visualization viz;
+    LOG(INFO)<<"--PCL Thread online--";
+    visualization viz;
 *_viz = &viz;//传递指针出去
 //LOG(INFO)<<"PCL_VIS:"<<(long int)(*_viz);
 while(!(viz.viewer->wasStopped())) 
 {
-viz.checkoutCamera();
-viz.checkoutPointCloud();
-viz.viewer->spinOnce(100);
+    viz.checkoutCamera();
+    viz.checkoutPointCloud();
+    viz.viewer->spinOnce(100);
 } 
 _viz = NULL;
 LOG(INFO)<<"--PCL Thread done--";
@@ -44,21 +44,21 @@ LOG(INFO)<<"--PCL Thread done--";
 //绘制图
 void update_PLOT(plot** _viz)
 {
-LOG(INFO)<<"--PLOT Thread online--";
-plot viz;
+    LOG(INFO)<<"--PLOT Thread online--";
+    plot viz;
 *_viz = &viz;//传递指针出去
 //LOG(INFO)<<"PCL_VIS:"<<(long int)(*_viz);
 while(!(viz.viewer->wasStopped())) 
 {
-viz.checkoutBar();
-viz.viewer->spinOnce(1000);
+    viz.checkoutBar();
+    viz.viewer->spinOnce(1000);
 } 
 _viz = NULL;
 LOG(INFO)<<"--PLOT Thread done--";
 }
 //MAT->PCL
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr MatToPointXYZRGB(cv::Mat OpencVPointCloud,cv::Mat color)
-         {
+{
              /*
              *  Function: Get from a Mat to pcl pointcloud datatype
              *  In: cv::Matqq
@@ -71,7 +71,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr MatToPointXYZRGB(cv::Mat OpencVPointCloud
                 //std::cout<<i<<endl;
 
                 pcl::PointXYZRGB point;
-		float ratio = OpencVPointCloud.at<float>(3,i);
+                float ratio = OpencVPointCloud.at<float>(3,i);
                 point.x = OpencVPointCloud.at<float>(0,i)/ratio;
                 point.y = OpencVPointCloud.at<float>(1,i)/ratio;
                 point.z = OpencVPointCloud.at<float>(2,i)/ratio;
@@ -85,21 +85,21 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr MatToPointXYZRGB(cv::Mat OpencVPointCloud
                 point_cloud_ptr -> points.push_back(point);
 /*}
 */
-             }
-point_cloud_ptr->is_dense=false;
-             point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+            }
+            point_cloud_ptr->is_dense=false;
+            point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
 //printf("Point num:%d\n",point_cloud_ptr->width);
-             point_cloud_ptr->height = 1;
+            point_cloud_ptr->height = 1;
 
-             return point_cloud_ptr;
+            return point_cloud_ptr;
 
-         }
-
-
+        }
 
 
-int main(int argc, char** argv)
-{
+
+
+        int main(int argc, char** argv)
+        {
 /*测试代码*/
 /*
     tri_manager obj;
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     obj.testOpenCV("path");
 */
 //准备日志环节
-google::InitGoogleLogging(argv[0]); 
+            google::InitGoogleLogging(argv[0]); 
 FLAGS_colorlogtostderr = true;	//按颜色显示日志
 FLAGS_logbufsecs = 0;		//不需要日志缓冲时间
 FLAGS_stderrthreshold = 0;	//设置输出INFO级别的信息
@@ -122,13 +122,13 @@ LOG(INFO) << "Build time:"<< __TIME__ <<" "<< __DATE__;
 LOG(INFO)<<"---PRINT PARA---";
 for(int i = 0;i<argc;i++)
 {
-LOG(INFO)<<"Para "<<i<<": "<<argv[i];
+    LOG(INFO)<<"Para "<<i<<": "<<argv[i];
 }
 if(argc<2)
 {
-LOG(WARNING)<<"Usage: ./bin/main <img_dir>";
-LOG(INFO)<<"Program return 1";
-return 1;
+    LOG(WARNING)<<"Usage: ./bin/main <img_dir>";
+    LOG(INFO)<<"Program return 1";
+    return 1;
 }
 
 #ifdef  DRAW_PCL
@@ -157,21 +157,21 @@ std::fstream dt;
 dt.open(dt_dir,std::ios::in);
 if(!dt.is_open())
 {
-LOG(ERROR)<<"Can't open "<<dt_dir;
-LOG(INFO)<<"Program return 2";
-return 2;
+    LOG(ERROR)<<"Can't open "<<dt_dir;
+    LOG(INFO)<<"Program return 2";
+    return 2;
 }
 else
 {
-char tmp[JS_BUF]={0};
-while(dt.getline(tmp,JS_BUF))
-{
+    char tmp[JS_BUF]={0};
+    while(dt.getline(tmp,JS_BUF))
+    {
 //检测注释！
-int p;
-for(p = 0;p<JS_BUF;p++)
-{
-if(tmp[p]=='#'||tmp[p]==0)
-{
+        int p;
+        for(p = 0;p<JS_BUF;p++)
+        {
+            if(tmp[p]=='#'||tmp[p]==0)
+            {
 tmp[p]=0;break;//截断字符串，进入解析环节
 }
 }
@@ -183,8 +183,8 @@ else
 #ifdef  DRAW_PCL
 #ifndef HISTGRAM
 //绘制
-if(tcu->isUsed){viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),250.0f,10.0f,0.0f,0.1f);}
-else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0f,0.0f,0.1f);}
+    if(tcu->isUsed){viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),250.0f,10.0f,0.0f,0.1f);}
+    else{viz->visualizerShowCamera(*(tcu->getabs_R()),*(tcu->getabs_T()),50.0f,200.0f,0.0f,0.1f);}
 #endif
 #endif
 }
@@ -203,7 +203,7 @@ std::vector<double>gndth,err,err_min;
 std::vector<int>err_c,err_idx;
 for(int i = 0;i<(end-begin);i++)
 {
-double p = ctri.seq[i+begin]->groundtruth;
+    double p = ctri.seq[i+begin]->groundtruth;
 p  =sqrt(p*p+25);//标牌高5m
 #ifdef DRAW_PCL
 #ifdef HISTGRAM
@@ -223,90 +223,96 @@ err_c.resize(step);
 err_min.resize(step);
 err_idx.resize(step);
 for(int i = 0;i<err.size();i++){err[i]=0;err_c[i]=0;err_min[i] = 1e5;err_idx[i] = -1;}//清零误差和
-for(int i = begin;i<end;i++)
+    for(int i = begin;i<end;i++)
 //注意！这里是index坐标！
 //for(int i = begin;i<begin+1;i++)
-{
-for(int j = 1;j<=end-i && j<=step;j++)
-{
-LOG(INFO)<<"---index:"<<i<<"---step:"<<j<<"---";
-cv::Mat res,color;
-double distance = ctri.matchCamera(i-1,i+j-1,res,color);
-ft[i-begin].push_back(distance);
-LOG(INFO)<<distance;
+    {
+        for(int j = 1;j<=end-i && j<=step;j++)
+        {
+            LOG(INFO)<<"---index:"<<i<<"---step:"<<j<<"---";
+            cv::Mat res,color;
+            double distance = ctri.matchCamera(i-1,i+j-1,res,color);
+            ft[i-begin].push_back(distance);
+            LOG(INFO)<<distance;
 //LOG(INFO)<<res;
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl;
 //LOG(INFO)<<"M0";
-if(res.cols<1){continue;}
+            if(res.cols<1){continue;}
 //LOG(INFO)<<"M1";
-pcl = MatToPointXYZRGB(res,color);
-char d[32];
-sprintf(d,"cc_%d_%d",i,j);
+            pcl = MatToPointXYZRGB(res,color);
+            char d[32];
+            sprintf(d,"cc_%d_%d",i,j);
 //LOG(INFO)<<"M2";
 
-if(distance>0)
-{
+            if(distance>0)
+            {
 //LOG(INFO)<<"M3";
 //LOG(INFO)<<"M4";
-double err_this =distance-gndth[i-begin];
-err[j-1]+= dabs(err_this);
-if(dabs(err_this)<err_min[j-1])
-{
+                double err_this =distance-gndth[i-begin];
+                err[j-1]+= dabs(err_this);
+                if(dabs(err_this)<err_min[j-1])
+                {
 //LOG(WARNING)<<"Abs:"<<abs(err_this)<<" no Abs:"<<err_this;
-LOG(WARNING)<<"Image:"<<i<<" Step:"<<j<<" min_err from "<<err_min[j-1]<<" to "<<dabs(err_this);
-err_min[j-1] = dabs(err_this);err_idx[j-1] = i;
-}
-err_c[j-1]++;
+                    LOG(WARNING)<<"Image:"<<i<<" Step:"<<j<<" min_err from "<<err_min[j-1]<<" to "<<dabs(err_this);
+                    err_min[j-1] = dabs(err_this);err_idx[j-1] = i;
+                }
+                err_c[j-1]++;
 #ifdef  DRAW_PCL
 #ifdef HISTGRAM
-cv::Vec3f cc = calColor(err_this);
-LOG(INFO)<<"Draw-sx:"<<sx<<" sy:"<<sy<<" v2:"<<err_this<<cc;
-plt->plotShowBar(sx,sy,0,distance,cc[0],cc[1],cc[2]);
-//plt->plotShowBar(sx,sy,0.0,err_this,cc[0],cc[1],cc[2]);
+                cv::Vec3f cc = calColor(err_this);
+                LOG(INFO)<<"Draw-sx:"<<sx<<" sy:"<<sy<<" v2:"<<err_this<<cc;
+                //plt->plotShowBar(sx,sy,0,distance,cc[0],cc[1],cc[2]);
+                plt->plotShowBar(sx,sy,0.0,err_this,cc[0],cc[1],cc[2]);
 #endif
 #endif
 
-}
+            }
 #ifdef  DRAW_PCL
 #ifndef HISTGRAM
-viz->visualizationShowPointCloud(pcl,d);
+//viz->visualizationShowPointCloud(pcl,d);
 #endif
 #endif
 
-sx++;
-}
-sx = 1;
-sy++;
-}
+            sx++;
+        }
+        sx = 1;
+        sy++;
+    }
 
-LOG(INFO)<<"Done";
+    LOG(INFO)<<"Done";
 //计算平均值
-for(int i = 0;i<err.size();i++)
-{
-err[i] = err[i]/err_c[i];
-}
-LOG(INFO)<<"ABS ERR";
-FILE *outfile;
-sprintf(dt_dir,"%s/output_distance.txt",argv[1]);
-outfile = fopen(dt_dir,"w");
-fprintf(outfile,"Format\nIndex|mean_error|min_error|min_error_index|min_error_location\n");
-for(int i = 0;i<err.size();i++){
-printf("%03d | %0.3f | %0.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
-fprintf(outfile,"%03d | %0.3f | %.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
-};
-fclose(outfile);
-LOG(INFO)<<"TREE";
-for(int i = 0;i<ft.size();i++)
-{
-printf("%03d|%.1f|",ctri.getBegin()+i,gndth[i]);
-for(int j =0;j<ft[i].size();j++)
-{
-printf("%.1f ",ft[i][j]);
-}
-printf("\n");
-}
+    for(int i = 0;i<err.size();i++)
+    {
+        err[i] = err[i]/err_c[i];
+    }
+    LOG(INFO)<<"ABS ERR";
+    FILE *outfile;
+    sprintf(dt_dir,"%s/output_distance.txt",argv[1]);
+    outfile = fopen(dt_dir,"w");
+    fprintf(outfile,"Abs error Format\nIndex|mean_error|min_error|min_error_index|min_error_location\n");
+    for(int i = 0;i<err.size();i++){
+        printf("%03d | %0.3f | %0.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
+        fprintf(outfile,"%03d | %0.3f | %.3f | %03d | %0.3f\n",i+1,err[i],err_min[i],err_idx[i],gndth[err_idx[i]-1-begin]);
+    };
+    
+    fprintf(outfile,"\n\n\nTotal error Format\nIndex|ground_truth|Skip = 1...\n");
+    LOG(INFO)<<"Total ERR";
+    for(int i = 0;i<ft.size();i++)
+    {
 
-LOG(INFO)<<"ALL DONE";
+        printf("%03d|%.1f|",ctri.getBegin()+i,gndth[i]);
+        fprintf(outfile,"%03d|%.1f|",ctri.getBegin()+i,gndth[i]);
+        for(int j =0;j<ft[i].size();j++)
+        {
+            printf("%.1f ",ft[i][j]);
+            fprintf(outfile,"%.1f ",ft[i][j]);
+
+        }
+        printf("\n");
+        fprintf(outfile,"\n");
+    }
+    fclose(outfile);
+    LOG(INFO)<<"ALL DONE";
 /*
 std::string filename("test.pcd");  
 pcl::PCDWriter writer;
@@ -316,9 +322,9 @@ LOG(INFO)<<"Save done.";
 
 //结束了！
 #ifdef DRAW_PCL
-t.join();
+    t.join();
 #endif
-cv::destroyAllWindows();
-LOG(INFO)<<"---TRIANGULATION MANAGER---";
-return 0;
+    cv::destroyAllWindows();
+    LOG(INFO)<<"---TRIANGULATION MANAGER---";
+    return 0;
 }
