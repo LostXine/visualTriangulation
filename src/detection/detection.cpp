@@ -66,24 +66,24 @@ void on_mouse4(int event, int x,int y,int flags,void* param)
 
 
 class Detector {
- public:
+public:
   Detector(const string& model_file,
-           const string& weights_file,
-           const string& mean_file,
-           const string& mean_value);
+   const string& weights_file,
+   const string& mean_file,
+   const string& mean_value);
 
   std::vector<vector<float> > Detect(const cv::Mat& img);
   int detect(const char *file, int bbox[4]);
 
- private:
+private:
   void SetMean(const string& mean_file, const string& mean_value);
 
   void WrapInputLayer(std::vector<cv::Mat>* input_channels);
 
   void Preprocess(const cv::Mat& img,
-                  std::vector<cv::Mat>* input_channels);
+    std::vector<cv::Mat>* input_channels);
 
- private:
+private:
   shared_ptr<Net<float> > net_;
   cv::Size input_geometry_;
   int num_channels_;
@@ -91,9 +91,9 @@ class Detector {
 };
 
 Detector::Detector(const string& model_file,
-                   const string& weights_file,
-                   const string& mean_file,
-                   const string& mean_value) {
+ const string& weights_file,
+ const string& mean_file,
+ const string& mean_value) {
 #ifdef CPU_ONLY
   Caffe::set_mode(Caffe::CPU);
 #else
@@ -110,7 +110,7 @@ Detector::Detector(const string& model_file,
   Blob<float>* input_layer = net_->input_blobs()[0];
   num_channels_ = input_layer->channels();
   CHECK(num_channels_ == 3 || num_channels_ == 1)
-    << "Input layer should have 1 or 3 channels.";
+  << "Input layer should have 1 or 3 channels.";
   input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
 
   /* Load the binaryproto mean file. */
@@ -120,7 +120,7 @@ Detector::Detector(const string& model_file,
 std::vector<vector<float> > Detector::Detect(const cv::Mat& img) {
   Blob<float>* input_layer = net_->input_blobs()[0];
   input_layer->Reshape(1, num_channels_,
-                       input_geometry_.height, input_geometry_.width);
+   input_geometry_.height, input_geometry_.width);
   /* Forward dimension change to all layers. */
   net_->Reshape();
 
@@ -154,7 +154,7 @@ void Detector::SetMean(const string& mean_file, const string& mean_value) {
   cv::Scalar channel_mean;
   if (!mean_file.empty()) {
     CHECK(mean_value.empty()) <<
-      "Cannot specify mean_file and mean_value at the same time";
+    "Cannot specify mean_file and mean_value at the same time";
     BlobProto blob_proto;
     ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
 
@@ -162,7 +162,7 @@ void Detector::SetMean(const string& mean_file, const string& mean_value) {
     Blob<float> mean_blob;
     mean_blob.FromProto(blob_proto);
     CHECK_EQ(mean_blob.channels(), num_channels_)
-      << "Number of channels of mean file doesn't match input layer.";
+    << "Number of channels of mean file doesn't match input layer.";
 
     /* The format of the mean file is planar 32-bit float BGR or grayscale. */
     std::vector<cv::Mat> channels;
@@ -185,7 +185,7 @@ void Detector::SetMean(const string& mean_file, const string& mean_value) {
   }
   if (!mean_value.empty()) {
     CHECK(mean_file.empty()) <<
-      "Cannot specify mean_file and mean_value at the same time";
+    "Cannot specify mean_file and mean_value at the same time";
     stringstream ss(mean_value);
     vector<float> values;
     string item;
@@ -194,13 +194,13 @@ void Detector::SetMean(const string& mean_file, const string& mean_value) {
       values.push_back(value);
     }
     CHECK(values.size() == 1 || values.size() == num_channels_) <<
-      "Specify either 1 mean_value or as many as channels: " << num_channels_;
+    "Specify either 1 mean_value or as many as channels: " << num_channels_;
 
     std::vector<cv::Mat> channels;
     for (int i = 0; i < num_channels_; ++i) {
       /* Extract an individual channel. */
       cv::Mat channel(input_geometry_.height, input_geometry_.width, CV_32FC1,
-          cv::Scalar(values[i]));
+        cv::Scalar(values[i]));
       channels.push_back(channel);
     }
     cv::merge(channels, mean_);
@@ -226,7 +226,7 @@ void Detector::WrapInputLayer(std::vector<cv::Mat>* input_channels) {
 }
 
 void Detector::Preprocess(const cv::Mat& img,
-                            std::vector<cv::Mat>* input_channels) {
+  std::vector<cv::Mat>* input_channels) {
   /* Convert the input image to the input image format of the network. */
   cv::Mat sample;
   if (img.channels() == 3 && num_channels_ == 1)
@@ -261,36 +261,36 @@ void Detector::Preprocess(const cv::Mat& img,
   cv::split(sample_normalized, *input_channels);
 
   CHECK(reinterpret_cast<float*>(input_channels->at(0).data)
-        == net_->input_blobs()[0]->cpu_data())
-    << "Input channels are not wrapping the input layer of the network.";
+    == net_->input_blobs()[0]->cpu_data())
+  << "Input channels are not wrapping the input layer of the network.";
 }
 
 DEFINE_string(mean_file, "",
-    "The mean file used to subtract from the input image.");
+  "The mean file used to subtract from the input image.");
 DEFINE_string(mean_value, "104,117,123",
-    "If specified, can be one value or can be same as image channels"
-    " - would subtract from the corresponding channel). Separated by ','."
-    "Either mean_file or mean_value should be provided, not both.");
+  "If specified, can be one value or can be same as image channels"
+  " - would subtract from the corresponding channel). Separated by ','."
+  "Either mean_file or mean_value should be provided, not both.");
 //DEFINE_string(file_type, "image",
  //   "The file type in the list_file. Currently support image and video.");
 DEFINE_string(out_file, "",
-    "If provided, store the detection results in the out_file.");
+  "If provided, store the detection results in the out_file.");
 DEFINE_double(confidence_threshold, 0.5,
-    "Only store detections with score higher than the threshold.");
+  "Only store detections with score higher than the threshold.");
 
 int Detector::detect(const char *file, int bbox[4]){
-    cv::Mat img = cv::imread(file, -1);
-    CHECK(!img.empty()) << "Unable to decode image " << file;
+  cv::Mat img = cv::imread(file, -1);
+  CHECK(!img.empty()) << "Unable to decode image " << file;
 
-    img_global = img.clone();
-std::vector<vector<float> > detections = Detect(img);
-    int sum=0;
-    for (int i = 0; i < detections.size(); ++i) {
-          const vector<float>& d = detections[i];
+  img_global = img.clone();
+  std::vector<vector<float> > detections = Detect(img);
+  int sum=0;
+  for (int i = 0; i < detections.size(); ++i) {
+    const vector<float>& d = detections[i];
           // Detection format: [image_id, label, score, xmin, ymin, xmax, ymax].
-          CHECK_EQ(d.size(), 7);
-          const float score = d[2];
-          if (score >= 0.5) {
+    CHECK_EQ(d.size(), 7);
+    const float score = d[2];
+    if (score >= 0.5) {
             //out << file << "_";
             //out << std::setfill('0') << std::setw(6) << frame_count << " ";
             //out << static_cast<int>(d[1]) << " ";
@@ -299,13 +299,13 @@ std::vector<vector<float> > detections = Detect(img);
             //out << static_cast<int>(d[4] * img.rows) << " ";
             //out << static_cast<int>(d[5] * img.cols) << " ";
             //out << static_cast<int>(d[6] * img.rows) << std::endl;
-            bbox[0]=static_cast<int>(d[3] * img.cols);
-            bbox[1]=static_cast<int>(d[4] * img.rows);
-            bbox[2]=static_cast<int>(d[5] * img.cols);
-            bbox[3]=static_cast<int>(d[6] * img.rows);
-            sum = bbox[0]+bbox[1]+bbox[2]+bbox[3];
-          }
-        }
+      bbox[0]=static_cast<int>(d[3] * img.cols);
+      bbox[1]=static_cast<int>(d[4] * img.rows);
+      bbox[2]=static_cast<int>(d[5] * img.cols);
+      bbox[3]=static_cast<int>(d[6] * img.rows);
+      sum = bbox[0]+bbox[1]+bbox[2]+bbox[3];
+    }
+  }
 //if(sum){rectangle(img,cv::Point(bbox[0],bbox[1]),cv::Point(bbox[2],bbox[3]),cv::Scalar(255,0,0));cv::imshow("image",img);}
   return (sum > 0)? 0 : 1;
 }
@@ -330,30 +330,30 @@ int main(int argc, char** argv) {
 
   // Initialize the network.
   Detector detector(model_file, weights_file, mean_file, mean_value);
-char data_path[256];
-sprintf(data_path,"%s/data.json",argv[3]);
-std::fstream dt,rt;
-dt.open(data_path,std::ios::in);
-sprintf(data_path,"%s/detection.json",argv[3]);
-rt.open(data_path,std::ios::out);
-if(!dt.is_open())
-{
-LOG(ERROR)<<"Can't open "<<data_path;
-LOG(INFO)<<"Program return 2";
-return 2;
-}
-else
-{
-bool isDetection = true;
-char tmp[256]={0};
-while(dt.getline(tmp,256))
-{
+  char data_path[256];
+  sprintf(data_path,"%s/data.json",argv[3]);
+  std::fstream dt,rt;
+  dt.open(data_path,std::ios::in);
+  sprintf(data_path,"%s/detection.json",argv[3]);
+  rt.open(data_path,std::ios::out);
+  if(!dt.is_open())
+  {
+    LOG(ERROR)<<"Can't open "<<data_path;
+    LOG(INFO)<<"Program return 2";
+    return 2;
+  }
+  else
+  {
+    bool isDetection = true;
+    char tmp[256]={0};
+    while(dt.getline(tmp,256))
+    {
 //检测注释！
-int p;
-for(p = 0;p<256;p++)
-{
-if(tmp[p]=='#'||tmp[p]==0)
-{
+      int p;
+      for(p = 0;p<256;p++)
+      {
+        if(tmp[p]=='#'||tmp[p]==0)
+        {
 tmp[p]=0;break;//截断字符串，进入解析环节
 }
 }
@@ -363,69 +363,69 @@ Document d;
 d.Parse(tmp);	
 if (d.HasParseError())
 {
-LOG(ERROR)<<tmp<<" HasParseError";
-continue;
+  LOG(ERROR)<<tmp<<" HasParseError";
+  continue;
 }
 else
 {
-if (Value* _path = Pointer("/image path").Get(d))
-{
-  char path_cache[256];
-memcpy(path_cache,_path->GetString(),_path->GetStringLength());
-char f_path[256];
-sprintf(f_path,"%s/%s",argv[3],path_cache);
-const char* pf = f_path;
-  int bndbox[4]={0};
-cv::namedWindow("image",CV_WINDOW_AUTOSIZE);
-cv::setMouseCallback("image",on_mouse4);
+  if (Value* _path = Pointer("/image path").Get(d))
+  {
+    char path_cache[256];
+    memcpy(path_cache,_path->GetString(),_path->GetStringLength());
+    char f_path[256];
+    sprintf(f_path,"%s/%s",argv[3],path_cache);
+    const char* pf = f_path;
+    int bndbox[4]={0};
+    cv::namedWindow("image",CV_WINDOW_AUTOSIZE);
+    cv::setMouseCallback("image",on_mouse4);
 
-int flag = detector.detect(pf,bndbox);
-  Value* _index = Pointer("/index").Get(d);
- std::cout<<"Index:"<<_index->GetInt()<<" flag:"<<flag;
-if(flag)
-{
-cv::Mat img_s = img_global.clone();
-rectangle(img_s,p1,p2,cv::Scalar(0,128,255));
-cv::imshow("image",img_s);
-if(isDetection)
-{
-char p = cv::waitKey();
-std::cout<<" key:"<<(int)p;
-if(p == 27){isDetection = false;for(int i = 0;i<4;i++){bndbox[i]=-1;}}
-else
-{
-bndbox[0] = p1.x;
-bndbox[1] = p1.y;
-bndbox[2] = p2.x;
-bndbox[3] = p2.y;
-}
-}
-else
-{
-cv::waitKey(10);
-}
+    int flag = detector.detect(pf,bndbox);
+    Value* _index = Pointer("/index").Get(d);
+    std::cout<<"Index:"<<_index->GetInt()<<" flag:"<<flag;
+    if(flag)
+    {
+      cv::Mat img_s = img_global.clone();
+      rectangle(img_s,p1,p2,cv::Scalar(0,128,255));
+      cv::imshow("image",img_s);
+      if(isDetection)
+      {
+        char p = cv::waitKey();
+        std::cout<<" key:"<<(int)p;
+        if(p == 27){isDetection = false;for(int i = 0;i<4;i++){bndbox[i]=-1;}}
+        else
+        {
+          bndbox[0] = p1.x;
+          bndbox[1] = p1.y;
+          bndbox[2] = p2.x;
+          bndbox[3] = p2.y;
+        }
+      }
+      else
+      {
+        cv::waitKey(10);
+      }
 
-}
-else
-{
+    }
+    else
+    {
 //检测成功
-cv::Mat imgshow = img_global.clone();
-rectangle(imgshow,cv::Point(bndbox[0],bndbox[1]),cv::Point(bndbox[2],bndbox[3]),cv::Scalar(255,0,0));
-cv::imshow("image",imgshow);
-cv::waitKey(10);
-}
- std::cout<<std::endl;
+      cv::Mat imgshow = img_global.clone();
+      rectangle(imgshow,cv::Point(bndbox[0],bndbox[1]),cv::Point(bndbox[2],bndbox[3]),cv::Scalar(255,0,0));
+      cv::imshow("image",imgshow);
+      cv::waitKey(10);
+    }
+    std::cout<<std::endl;
 
-for(int i = 0;i<4;i++)
-{
-char idx[7];
-sprintf(idx,"/box/%d",i);
-Pointer(idx).Set(d,bndbox[i]);
-}
-p1 = cv::Point(bndbox[0],bndbox[1]);
-p2 = cv::Point(bndbox[2],bndbox[3]);
+    for(int i = 0;i<4;i++)
+    {
+      char idx[7];
+      sprintf(idx,"/box/%d",i);
+      Pointer(idx).Set(d,bndbox[i]);
+    }
+    p1 = cv::Point(bndbox[0],bndbox[1]);
+    p2 = cv::Point(bndbox[2],bndbox[3]);
 
-}
+  }
 
 }
 
@@ -437,7 +437,7 @@ rt<<bf.GetString()<<std::endl;
 
 }
 rt.close();
-  return 0;
+return 0;
 }
 #else
 int main(int argc, char** argv) {
